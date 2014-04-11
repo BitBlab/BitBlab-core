@@ -22,9 +22,9 @@
  */
 
 var express = require('express');
-var routes = require('./routes');
-var user = require('./routes/user');
-var chat = require('./routes/chat');
+//var routes = require('./routes');
+//var user = require('./routes/user');
+//var chat = require('./routes/chat');
 var socketio = require('socket.io');
 var http = require('http');
 var path = require('path');
@@ -67,7 +67,7 @@ var userColors = {};
 var userMsgTime = {};
 
 var adNum = 0;
-var advertisements = ["You ad here! Email admin[at]bitblab.net"];
+var advertisements = ["Your ad here! Email admin[at]bitblab.net"];
 
 var emoteCodes = [":happy:", ":sad:", ":mad:", ":cool:", ":XD:", ":gasp:", ":speechless:", ":tongue:", ":up:", ":down:", ":cthulhu:", ":devil:", ":grin:", ":btc:"];
 var emoteFiles = ["smiling.png", "frowning.png", "angry.png", "cool.png", "tongue_out_laughing.png", "gasping.png", "speechless.png", "tongue_out.png", "thumbs_up.png", "thumbs_down.png", "cthulhu.png", "devil.png", "grinning.png", "btc.png"];
@@ -89,9 +89,9 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.get('/', chat.main);
+//app.get('/', chat.main);
 //app.get('/', routes.index);
-app.get('/chat', chat.main);
+//app.get('/chat', chat.main);
 
 var server = app.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
@@ -417,9 +417,26 @@ io.sockets.on('connection', function(socket) {
 		right = right.slice(0, rightwords[0].length) + "</a>" + right.slice(rightwords[0].length);
 		msg.message = left + right;
 	}*/
+	
 	msg.message = addEmotes(msg.message);
 	
-	if(msg.color != undefined){
+	for(var i = 0; i < words.length; i++) {
+        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
+		    if(userType[srcUser] >= 1){
+		        console.log("Link detected");
+                var url = words[i];
+                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
+			}else{
+			    words[i] = "[Warning: links may contain malware]" + words[i];
+			}
+        }else if(words[i].indexOf("#", 0) == 0){
+			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+		}
+    }
+	
+	msg.message = words.join(" ");
+	
+	if(typeof msg.color != "undefined"){
 		var owned = userColors[srcUser].split(",");
 		var authed = false;
 		
@@ -438,21 +455,6 @@ io.sockets.on('connection', function(socket) {
 		}
 	}
 	
-	//words = msg.message.split(" ");
-	for(var i = 0; i < words.length; i++) {
-        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
-		    if(userType[srcUser] >= 1){
-		        console.log("Link detected");
-                var url = words[i];
-                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
-			}else{
-			    words[i] = "[Warning: links may contain malware]" + words[i];
-			}
-        }else if(words[i].indexOf("#", 0) == 0){
-			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
-		}
-    }
-    msg.message = words.join(" ");	
     if (msg.type == "room") {
       // broadcast
 	io.sockets.emit('message',
@@ -646,7 +648,7 @@ io.sockets.on('connection', function(socket) {
 	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket.id, data.room, data.message);
   });
   
-  socket.on('list' function(data){
+  socket.on('list', function(data){
 	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers));
   });
   

@@ -179,6 +179,9 @@ function sendMessage() {
 	if(color == "" || color === undefined){
 		color = "#000000";
 	}
+	
+	console.log(color);
+	
 	//msg=stripHTML(msg);
 	
 	msg = replaceEmotes(msg);
