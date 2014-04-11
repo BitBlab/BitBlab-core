@@ -440,16 +440,16 @@ io.sockets.on('connection', function(socket) {
 	
 	//words = msg.message.split(" ");
 	for(var i = 0; i < words.length; i++) {
-        if(words[i].indexOf("http://", 0) == 0){
+        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
 		    if(userType[srcUser] >= 1){
 		        console.log("Link detected");
                 var url = words[i];
                 words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
 			}else{
-			    words[i] = "[Link removed]";
+			    words[i] = "[Warning: links may contain malware]" + words[i];
 			}
         }else if(words[i].indexOf("#", 0) == 0){
-			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i] + "\");'>" + words[i] + "</a>";
+			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
 		}
     }
     msg.message = words.join(" ");	
@@ -646,12 +646,18 @@ io.sockets.on('connection', function(socket) {
 	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket.id, data.room, data.message);
   });
   
+  socket.on('list' function(data){
+	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers));
+  });
+  
   socket.on('disconnect', function() {
     var uName = socketsOfClients[socket.id];
     delete socketsOfClients[socket.id];
     delete clients[uName];
 	onlineUsers.splice(onlineUsers.indexOf(uName), 1);
- 
+	
+	io.sockets.emit('userLeft', uName);
+	
     // relay this message to all the clients
  
     userLeft(uName);
