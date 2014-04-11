@@ -141,7 +141,6 @@ function setBalance(bal) {
 function setUsername() {
     myUserName = $('input#userName').val();
 	var pass = $('input#password').val();
-	var authKey = $('input#key').val();
 	
 	if(pass.length < 6){
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
@@ -150,7 +149,7 @@ function setUsername() {
 	pass = CryptoJS.AES.encrypt(pass, clientID).toString();
 	
 	myUserName=stripHTML(myUserName);
-    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true, "key": authKey}, function(data) { console.log('emit set username', data); });
+    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
 	addRoom("Main");
 	//roomList["Main"] = true;

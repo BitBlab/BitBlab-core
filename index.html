@@ -1,0 +1,62 @@
+<html>
+<title>BitBlab</title>
+<link rel="stylesheet" href="/stylesheets/style.css"><link rel="stylesheet" href="/stylesheets/chat.css">
+<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
+<script src="/javascripts/socket.io.js"></script>
+<script src="/javascripts/jquery/jquery-1.7.2.min.js"></script>
+<script src="/javascripts/chat.js"></script>
+<link rel="stylesheet" href="/dist/css/bootstrap.min.css">
+<script src="/dist/js/bootstrap.min.js"></script>
+<body>
+<audio id="pingSound"><source src="/sounds/ping.mp3" type="audio/mpeg">
+<source src="/sounds/ping.ogg" type="audio/ogg"></audio>
+<audio id="dingdongSound" src="http://www.eventsounds.com/wav/dingdong.wav"></audio>
+<h1>BitBlab</h1>
+<form id="loginform" class="form-inline">
+<div class="form-group">
+<label for="userName">Username:</label>
+<input id="userName" type="text" size="30" class="form-control"></div>
+<div class="form-group">
+<label for="password">Password:</label><input id="password" type="password" size="30" class="form-control"></div>
+<input id="register" type="button" value="Register" class="btn btn-info">
+<input id="login" type="button" value="Login" class="btn btn-primary"></form>
+<span id="feedback"><span id="balance" class="label label-success"></span>
+</span>
+<p></p>
+<table>
+<tr>
+<td>
+<div id="msgWindow" class="shadow"></div>
+</td>
+<td>
+<div id="roomWindow" class="shadow"></div>
+</td>
+<td>
+<iframe data-aa='16379' src='//ad.a-ads.com/16379?size=160x600' scrolling='no' style='width:160px; height:600px; border:0px; padding:0;overflow:hidden' allowtransparency='true'></iframe>
+</td>
+</tr>
+<tr>
+<td>
+<p>Join/Create Room/PM User</p>
+<form class="form-inline">
+<input id="newinput" type="text" style="width: 125px" disabled="true" class="form-control">
+<input id="newbutton" type="button" value="Join/Create Room" disabled="true" class="btn btn-success">
+</form>
+</td>
+</tr>
+</table>
+<p></p>
+<div>
+<br>
+<table>
+<tr>
+<td>
+<input id="msg" type="text" style="width: 600px" disabled="true" class="form-control"></td>
+<td><select id="color" style="width: 100px" disabled class="form-control"></select></td>
+<td><input id="buycolorinput" type="text" style="width: 100px" disabled="true" class="form-control"></td>
+<td><input id="buycolor" type="button" value="Buy Colors" disabled="true" class="btn btn-success"></td>
+</tr>
+</table>
+</div>
+</body>
+</html>
