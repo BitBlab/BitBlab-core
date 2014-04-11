@@ -1,0 +1,58 @@
+#msgWindow {
+  display: inline-block;
+  white-space: pre;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 700px;
+  max-width: 700px;
+  height: 550px;
+}
+ 
+#roomWindow {
+  white-space: pre;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 250px;
+  height: 550px;
+}
+ 
+.shadow {
+  box-shadow: 2px 2px 4px 1px #000000;
+  padding-top: 10px;
+  padding-right: 1px;
+  padding-bottom: 10px;
+  padding-left: 15px;
+}
+
+.allMsg {
+	max-width: 550px !important;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+ 
+.userSpan {
+	font-size: 9pt;
+	background-color: #FFFFCC;
+	width: 100px;
+	max-width: 100px;
+	min-width: 100px;
+}
+
+ .privTag {
+ color:green;
+}
+
+.privMsg {
+  font-style:italic;
+  white-space: pre-wrap;
+}
+ 
+.sysMsg {
+  font-style: italic;
+  color: grey;
+  white-space: pre-wrap;
+}
+
+.tipSpan{
+	width: 50px;
+}
