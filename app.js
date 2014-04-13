@@ -206,6 +206,7 @@ io.sockets.on('connection', function(socket) {
 				invalidLogin(socket.id);
 				return;
 			}
+			user = row.name;
 			console.log("all ok");	
 			if(aes){
 				pass = CryptoJS.AES.decrypt(pass, socket.id).toString(CryptoJS.enc.Utf8);
@@ -529,6 +530,10 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('addroom', function(data){
+	if(data.indexOf(" ") != -1){
+		io.sockets.sockets[socket.id].emit('error', "Rooms cannot contain spaces!");
+		return;
+	}
 	db.serialize(function(){
 		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data, function(err, row){
 			if(row === undefined){

@@ -469,11 +469,11 @@ $(function() {
 		e.preventDefault();
 		var input = $('input#msg').val();
 		var words = input.split(" ");
-		var recent = words[words.length - 1];
+		var recent = words[words.length - 1].toLowerCase();
 		words.pop()
 		for(var l=0; l < userList.length; l++){
 			if(typeof userList[l] != 'undefined'){
-				if(userList[l].indexOf(recent) == 0){
+				if(userList[l].toLowerCase().indexOf(recent) == 0){
 					recent = userList[l];
 					break;
 				}else{
