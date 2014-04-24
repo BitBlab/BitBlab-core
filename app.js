@@ -336,7 +336,7 @@ io.sockets.on('connection', function(socket) {
 	}else if(words[0] == "/pm"){
 		msg.type = "priv";
 		msg.target = words[1];
-		msg.message.substring(3 + words[1].length);
+		msg.message.substring(4 + words[1].length);
 	}else if(words[0] == "/topic"){
 		var targetRoom = msg.target;
 		var uLvl = userType[srcUser];
@@ -466,10 +466,13 @@ io.sockets.on('connection', function(socket) {
 	   "tip": winnings
 	   });
     } else if(msg.type == "priv"){
-	io.sockets.sockets[socket.id].emit('joinroom', "PM:" + msg.target);
-	io.sockets.sockets[clients[msg.target]].emit('joinroom', "PM:" + srcUser);
+	if(msg.target.indexOf("PM:") == -1){
+		msg.target = "PM:" + msg.target;
+	}
+	io.sockets.sockets[socket.id].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
+	io.sockets.sockets[clients[msg.target.substring(3)]].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
       // Look up the socket id
-	io.sockets.sockets[clients[msg.target]].emit('message',
+	io.sockets.sockets[clients[msg.target.substring(3)]].emit('message',
 	  {"source": srcUser,
 	   "message": msg.message,
 	   "target": msg.target,

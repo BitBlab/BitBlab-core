@@ -126,7 +126,6 @@ function handleUserLeft(msg) {
  
 
 socket = io.connect("http://192.168.0.128:3000"); //personal internal testing (AHuman)
-//socket = io.connect("http://99.224.84.142:3000"); //OLD external release
 //socket = io.connect("http://chat.bitblab.net:3000"); //NEW external release
 //socket = io.connect("http://localhost:3000"); //internal testing on local machine
 
@@ -209,8 +208,9 @@ function sendMessage() {
 	sentMessages.push(msg);
 	sentIndex = -1;
 	
-	if(trgt.substring(0, 3) == "PM:"){
+	if(trgt.indexOf("PM:") == 0){
 		pmUser(trgt.substring(3), msg);
+		return;
 	}else{
 		socket.emit('message',
                 {
@@ -255,6 +255,12 @@ function toggleRoom(room, topic){
 	if(room == currentRoom){
 		return;
 	}
+	
+	if(typeof roomList[room] == 'undefined'){
+		roomList[room] = true;
+		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	}
+	
 	if(!roomList[room]){
 		roomList[room] = true;
 		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
@@ -310,7 +316,11 @@ function pmUser(user, msg){
 				  "type": "priv"
                 });
 	var room = "PM:" + user;
-	$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	if(typeof roomList[room] == "undefined" || roomList[room] == false){
+		roomList[room] = true;
+		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	}
+	
 }
 
 function stripHTML(str){
