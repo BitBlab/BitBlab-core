@@ -25,6 +25,8 @@ var express = require('express');
 var morgan = require('morgan');
 var bodyParser = require('body-parser');
 var methodOverride = require('method-override');
+var serveStatic = require('serve-static');
+var errorHandler = require('errorhandler');
 
 //var routes = require('./routes');
 //var user = require('./routes/user');
@@ -82,14 +84,14 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(morgan('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded());
+app.use(bodyParser.urlencoded({extended:true}));
 app.use(methodOverride());
-app.use(app.router);
-app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(serveStatic(path.join(__dirname, 'public')));
 
 // development only
 if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
+  app.use(errorHandler());
 }
 
 //app.get('/', chat.main);
