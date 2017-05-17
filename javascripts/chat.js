@@ -16,6 +16,8 @@
    
 */
 
+const host = "localhost"; //set the server address
+
 var socket;
 var myUserName;
 
@@ -125,7 +127,7 @@ function handleUserLeft(msg) {
 }
  
 
-socket = io.connect("http://192.168.0.128:3000"); //personal internal testing (AHuman)
+socket = io.connect("http://" + host + ":3000"); //personal internal testing (AHuman)
 //socket = io.connect("http://chat.bitblab.net:3000"); //NEW external release
 //socket = io.connect("http://localhost:3000"); //internal testing on local machine
 
