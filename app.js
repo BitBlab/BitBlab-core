@@ -22,6 +22,10 @@
  */
 
 var express = require('express');
+var morgan = require('morgan');
+var bodyParser = require('body-parser');
+var methodOverride = require('method-override');
+
 //var routes = require('./routes');
 //var user = require('./routes/user');
 //var chat = require('./routes/chat');
@@ -76,11 +80,10 @@ var emoteFiles = ["smiling.png", "frowning.png", "angry.png", "cool.png", "tongu
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
-app.use(express.favicon());
-app.use(express.logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded());
-app.use(express.methodOverride());
+app.use(morgan('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded());
+app.use(methodOverride());
 app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
