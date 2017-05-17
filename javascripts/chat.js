@@ -126,7 +126,6 @@ function handleUserLeft(msg) {
  
 
 socket = io.connect("http://192.168.0.128:3000"); //personal internal testing (AHuman)
-//socket = io.connect("http://99.224.84.142:3000"); //OLD external release
 //socket = io.connect("http://chat.bitblab.net:3000"); //NEW external release
 //socket = io.connect("http://localhost:3000"); //internal testing on local machine
 
@@ -141,7 +140,6 @@ function setBalance(bal) {
 function setUsername() {
     myUserName = $('input#userName').val();
 	var pass = $('input#password').val();
-	var authKey = $('input#key').val();
 	
 	if(pass.length < 6){
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
@@ -150,7 +148,7 @@ function setUsername() {
 	pass = CryptoJS.AES.encrypt(pass, clientID).toString();
 	
 	myUserName=stripHTML(myUserName);
-    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true, "key": authKey}, function(data) { console.log('emit set username', data); });
+    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
 	addRoom("Main");
 	//roomList["Main"] = true;
@@ -180,6 +178,9 @@ function sendMessage() {
 	if(color == "" || color === undefined){
 		color = "#000000";
 	}
+	
+	console.log(color);
+	
 	//msg=stripHTML(msg);
 	
 	msg = replaceEmotes(msg);
@@ -207,8 +208,9 @@ function sendMessage() {
 	sentMessages.push(msg);
 	sentIndex = -1;
 	
-	if(trgt.substring(0, 3) == "PM:"){
+	if(trgt.indexOf("PM:") == 0){
 		pmUser(trgt.substring(3), msg);
+		return;
 	}else{
 		socket.emit('message',
                 {
@@ -253,6 +255,12 @@ function toggleRoom(room, topic){
 	if(room == currentRoom){
 		return;
 	}
+	
+	if(typeof roomList[room] == 'undefined'){
+		roomList[room] = true;
+		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	}
+	
 	if(!roomList[room]){
 		roomList[room] = true;
 		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
@@ -308,7 +316,11 @@ function pmUser(user, msg){
 				  "type": "priv"
                 });
 	var room = "PM:" + user;
-	$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	if(typeof roomList[room] == "undefined" || roomList[room] == false){
+		roomList[room] = true;
+		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+	}
+	
 }
 
 function stripHTML(str){
@@ -467,11 +479,11 @@ $(function() {
 		e.preventDefault();
 		var input = $('input#msg').val();
 		var words = input.split(" ");
-		var recent = words[words.length - 1];
+		var recent = words[words.length - 1].toLowerCase();
 		words.pop()
 		for(var l=0; l < userList.length; l++){
 			if(typeof userList[l] != 'undefined'){
-				if(userList[l].indexOf(recent) == 0){
+				if(userList[l].toLowerCase().indexOf(recent) == 0){
 					recent = userList[l];
 					break;
 				}else{
