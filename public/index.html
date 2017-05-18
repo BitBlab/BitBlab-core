@@ -1,63 +1,77 @@
-<meta charset="US-ANSI"> 
-<html>
-<title>BitBlab</title>
-<link rel="stylesheet" href="./stylesheets/style.css"><link rel="stylesheet" href="./stylesheets/chat.css">
-<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/aes.js"></script>
-<script src="./javascripts/socket.io.js"></script>
-<script src="./javascripts/jquery/jquery-1.7.2.min.js"></script>
-<script src="./javascripts/chat.js"></script>
-<link rel="stylesheet" href="./dist/css/bootstrap.min.css">
-<script src="./dist/js/bootstrap.min.js"></script>
-<body>
-<audio id="pingSound"><source src="./sounds/ping.mp3" type="audio/mpeg">
-<source src="./sounds/ping.ogg" type="audio/ogg"></audio>
-<audio id="dingdongSound" src=""></audio>
-<h1>BitBlab</h1>
-<form id="loginform" class="form-inline">
-<div class="form-group">
-<label for="userName">Username:</label>
-<input id="userName" type="text" size="30" class="form-control"></div>
-<div class="form-group">
-<label for="password">Password:</label><input id="password" type="password" size="30" class="form-control"></div>
-<input id="register" type="button" value="Register" class="btn btn-info">
-<input id="login" type="button" value="Login" class="btn btn-primary"></form>
-<span id="feedback"><span id="balance" class="label label-success"></span>
-</span>
-<p></p>
-<table>
-<tr>
-<td>
-<div id="msgWindow" class="shadow"></div>
-</td>
-<td>
-<div id="roomWindow" class="shadow"></div>
-</td>
-<td>
-<iframe data-aa='16379' src='http://ad.a-ads.com/16379?size=160x600' scrolling='no' style='width:160px; height:600px; border:0px; padding:0;overflow:hidden' allowtransparency='true'></iframe>
-</td>
-</tr>
-<tr>
-<td>
-<p>Join/Create Room/PM User</p>
-<form class="form-inline">
-<input id="newinput" type="text" style="width: 125px" disabled="true" class="form-control">
-<input id="newbutton" type="button" value="Join/Create Room" disabled="true" class="btn btn-success">
-</form>
-</td>
-</tr>
-</table>
-<p></p>
-<div>
-<br>
-<table>
-<tr>
-<td>
-<input id="msg" type="text" style="width: 600px" disabled="true" class="form-control"></td>
-<td><select id="color" style="width: 100px" disabled class="form-control"></select></td>
-<td><input id="buycolorinput" type="text" style="width: 100px" disabled="true" class="form-control"></td>
-<td><input id="buycolor" type="button" value="Buy Colors" disabled="true" class="btn btn-success"></td>
-</tr>
-</table>
-</div>
-</body>
+<!DOCTYPE HTML>
+<html height="100%">
+	<title>BitBlab</title>
+	<link rel="stylesheet" href="./stylesheets/style.css">
+	<link rel="stylesheet" href="./stylesheets/chat.css">
+	<link rel="stylesheet" href="./stylesheets/buttons.css">
+	<script src="./javascripts/aes.js"></script>
+	<script src="./javascripts/socket.io.js"></script>
+	<script src="./javascripts/jquery/jquery-1.7.2.min.js"></script>
+	<script src="./javascripts/chat.js"></script>
+	<link rel="stylesheet" href="./dist/css/bootstrap.min.css">
+	<script src="./dist/js/bootstrap.min.js"></script>
+	<body style="background-color: #ccc;" height="100%" width="100%">
+		<audio id="pingSound"><source src="./sounds/ping.mp3" type="audio/mpeg">
+		<source src="./sounds/ping.ogg" type="audio/ogg"></audio>
+		<audio id="dingdongSound" src="http://www.eventsounds.com/wav/dingdong.wav"></audio> <!-- This remote file shouldn't pose a problem in terms of an attack, since the worst that could happen is that they change the audio file to something else -->
+		<div id="pageHeader" width="100%" height="20%">
+			<!--<h1>BitBlab</h1>-->
+			<p align="right"><a href="./about.html">About Us</a> | <a href="./faq.html">FAQ</a></p>
+			<center><img src="./images/logo2.png" height="8%"/></center>
+			<p style="display:inline" id="udispbox"><h4 id="usernameDisplay" style="display:inline"></h4>  <a href='javascript:void(0)' onclick='logOut()' id="logOutBtn"></a></p>
+			<h2 id="statusAlert"></h2>
+			<form id="loginform" class="form-inline">
+				<table width="100%">
+					<tr width="100%">
+						<td width="33%"><label for="userName">Username:</label></td>
+						<td width="33%"><label for="password">Password:</label></td>
+					</tr>
+					<tr width="100%">
+						<td width="33%"><input id="userName" type="text" size="30" class="form-control"></td>
+						<td width="33%"><input id="password" type="password" size="30" class="form-control"></td>
+						<td width="33%">
+							<input id="register" type="button" value="Register" class="btn btn-reg">
+							<input id="login" type="button" value="Login" class="btn btn-login">
+						</td>
+					</tr>
+				</table>
+			</form>
+			<span id="feedback"><span id="balance" class="label label-success"></span></span>
+		</div>
+		<table width="100%" height="70%" style="margin: 0px; table-layout: fixed;">
+			<tr width="100%" height="70%">
+				<td id="mwrow" width="60%" height="100%">
+				<div style="overflow-y: scroll;" height="100%" width="100%">
+					<table id="msgWindow" class="shadowL"></table>
+				</div>
+				</td>
+				<td id="rwrow"  width="25%" height="100%">
+				<div id="roomWindow" class="shadow"></div>
+				</td>
+				<td width="15%" height="100%">
+				<iframe id="adWindow" data-aa='16379' src='//ad.a-ads.com/16379?size=160x600' scrolling='no' style='width:100%; height:100%; border:0px; padding:0;overflow:hidden' allowtransparency='true'></iframe>
+				</td>
+			</tr>
+			<tr height="15%">
+				<td height="100%">
+				<p>Join/Create Room/PM User</p>
+				<form class="form-inline">
+				<input id="newinput" type="text" style="width: 125px" disabled="true" class="form-control">
+				<input id="newbutton" type="button" value="Join/Create Room" disabled="true" class="btn btn-success">
+				</form>
+				</td>
+			</tr>
+		</table>
+		<table height="10%" width="100%">
+			<tr height="95%" width="100%">
+				<td width="70%"><input id="msg" type="text" width="100%" disabled="true" class="form-control"></td>
+				<td width="10%"><select id="color" width="100%" disabled class="form-control"></select></td>
+				<td width="10%"><input id="buycolorinput" type="text" width="100%" disabled="true" class="form-control"></td>
+				<td width="10%"><input id="buycolor" type="button" value="Buy Colors" disabled="true" class="btn btn-success" width="100%"></td>
+			</tr>
+			<tr height="5%" width="100%">
+				<td><p style="color:grey">BETA 1.0</p></td>
+			</tr>
+		</table>
+	</body>
 </html>

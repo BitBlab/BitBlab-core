@@ -6,3 +6,8 @@ body {
 a {
   color: #00B7FF;
 }
+
+.faq-item{
+	background-color: #FFF;
+	border-radius: 5px;
+}

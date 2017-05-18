@@ -1,0 +1,92 @@
+.btn-reg {
+  color: #333;
+  background-color: #FF9933;
+  border-color: #FF8000;
+}
+.btn-reg:hover,
+.btn-reg:focus,
+.btn-reg.focus,
+.btn-reg:active,
+.btn-reg.active,
+.open > .dropdown-toggle.btn-reg {
+  color: #333;
+  background-color: #FF8000;
+  border-color: #FF8000;
+}
+.btn-reg:active,
+.btn-reg.active,
+.open > .dropdown-toggle.btn-reg {
+  background-color: #FF8000;
+}
+.btn-reg.disabled,
+.btn-reg[disabled],
+fieldset[disabled] .btn-reg,
+.btn-reg.disabled:hover,
+.btn-reg[disabled]:hover,
+fieldset[disabled] .btn-reg:hover,
+.btn-reg.disabled:focus,
+.btn-reg[disabled]:focus,
+fieldset[disabled] .btn-reg:focus,
+.btn-reg.disabled.focus,
+.btn-reg[disabled].focus,
+fieldset[disabled] .btn-reg.focus,
+.btn-reg.disabled:active,
+.btn-reg[disabled]:active,
+fieldset[disabled] .btn-reg:active,
+.btn-reg.disabled.active,
+.btn-reg[disabled].active,
+fieldset[disabled] .btn-reg.active {
+  background-color: #FF9933;
+  border-color: #FF8000;
+}
+.btn-reg .badge {
+  color: #333;
+  background-color: #FF9933;
+}
+
+
+.btn-login {
+  color: #333;
+  background-color: #99CCCC;
+  border-color: #66CCCC;
+}
+.btn-login:hover,
+.btn-login:focus,
+.btn-login.focus,
+.btn-login:active,
+.btn-login.active,
+.open > .dropdown-toggle.btn-login {
+  color: #333;
+  background-color: #66CCCC;
+  border-color: #66CCCC;
+}
+.btn-login:active,
+.btn-login.active,
+.open > .dropdown-toggle.btn-login {
+  background-color: #66CCCC;
+}
+.btn-login.disabled,
+.btn-login[disabled],
+fieldset[disabled] .btn-login,
+.btn-login.disabled:hover,
+.btn-login[disabled]:hover,
+fieldset[disabled] .btn-login:hover,
+.btn-login.disabled:focus,
+.btn-login[disabled]:focus,
+fieldset[disabled] .btn-login:focus,
+.btn-login.disabled.focus,
+.btn-login[disabled].focus,
+fieldset[disabled] .btn-login.focus,
+.btn-login.disabled:active,
+.btn-login[disabled]:active,
+fieldset[disabled] .btn-login:active,
+.btn-login.disabled.active,
+.btn-login[disabled].active,
+fieldset[disabled] .btn-login.active {
+  background-color: #99CCCC;
+  border-color: #66CCCC;
+}
+.btn-login .badge {
+  color: #333;
+  background-color: #99CCCC;
+}
