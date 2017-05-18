@@ -46,7 +46,7 @@ var easterEggSound = false;
 
 //var pingSound = new Audio("/sounds/ping.mp3");
 
-var host = prompt("Server location")
+var host = window.location.hostname.split(":")[0]
 
 function enableMsgInput(enable) {
   $('input#msg').prop('disabled', !enable);
