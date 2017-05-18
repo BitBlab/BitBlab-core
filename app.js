@@ -759,6 +759,13 @@ function runCommand(socket, msg, words, srcUser)
 	switch(words[0])
 	{
 		case 'tip':
+
+			if(words.length < 3)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /tip [user] [mBtc] (message)", msg.target, msg.type);
+				return;
+			}
+
 			tipUser(srcUser, words[1], parseFloat(words[2]), socket.id, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
 			break;
 
@@ -820,6 +827,12 @@ function runCommand(socket, msg, words, srcUser)
 			if(userType[srcUser] < 3)
 				break;
 
+			if(words.length < 2)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /ban [user]", msg.target, msg.type);
+				return;
+			}
+
 			var targetSocket = socketsOfClients[words[1]];
 			db.serialize(function(){
 				db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
@@ -832,6 +845,12 @@ function runCommand(socket, msg, words, srcUser)
 		case 'userlevel':
 			if(userType[srcUser] < 3)
 				break;
+
+			if(words.length < 3)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /userlevel [user] [level]");
+				return;
+			}
 
 			var trgt = words[1];
 			var level = parseInt(words[2]);
