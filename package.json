@@ -1,0 +1,37 @@
+{ 
+  "name": "", 
+  "description": "", 
+  "version": "0.0.0", 
+  "private": true, 
+  "author": "", 
+  "homepage": "", 
+  "contributors": [ 
+    "Ronoman", 
+    "Amarite1" 
+  ], 
+  "bugs": { 
+    "url": "" 
+  }, 
+  "scripts": { 
+    "start": "supervisor app.js" 
+  }, 
+  "dependencies": { 
+    "express": "^4.15.3", 
+    "fs": "0.0.1-security", 
+    "http": "0.0.0", 
+    "node-cryptojs-aes": "^0.4.0", 
+    "path": "^0.12.7", 
+    "routes": "^2.1.0", 
+    "socket.io": "^2.0.1", 
+    "sqlite3": "^3.1.8" 
+  }, 
+  "devDependencies": {}, 
+  "keywords": [], 
+  "repository": "", 
+  "licenses": [ 
+    { 
+      "type": "MIT", 
+      "url": "http://opensource.org/licenses/MIT" 
+    } 
+  ] 
+} 
