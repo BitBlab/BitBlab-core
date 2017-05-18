@@ -193,10 +193,6 @@ function sendMessage() {
 		alert("Messages must be at least 2 characters long!");
 		return;
 	}
-	if(checkCommand(msg)){
-		$('input#msg').val("");
-	    return;
-	}
 	
 	if(msg == "Ding dong, the psycho's gone."){
 		easterEggSound = !easterEggSound;
@@ -288,16 +284,6 @@ function toggleRoom(room, topic){
 	if(roomData[currentRoom] != undefined && roomData[currentRoom] != ""){
 		$('#msgWindow').html(roomData[currentRoom]);
 	}
-}
-
-function checkCommand(msg){
-	if(msg.split("")[0] == "/"){
-		if(msg.split("")[1] == "s"){
-			socket.emit('command', {type: 'say', params: {message: msg}, target: currentRoom});
-			return true;
-		}
-	}
-	return false;
 }
 
 function newRoom(roomname){

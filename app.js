@@ -344,52 +344,8 @@ io.sockets.on('connection', function(socket) {
   })
   
   socket.on('command', function(data){
-	var type = data.type;
-	var params = data.params;
-	var target = data.target;
-	
-	var user = socketsOfClients[socket.id];
-	
-	db.serialize(function(){
-		db.get("SELECT type FROM users WHERE name = ?", user, function(err, row){
-			if(row === undefined){
-				console.log("User doesn't exist... WTF???");
-				return;
-			}
-			
-			var userType = row.type;
-			
-			if(userType >= 3){
-				if(type == "ban"){
-					var targetSocket = socketsOfClients[data.params["user"]];
-					io.sockets.sockets[targetSocket].emit('notice', "You have been banned!");
-					setTimeout(function(){
-						io.sockets.sockets[targetSocket].disconnect();
-					}, 500);
-				}else if(type == "say"){
-					console.log("command type is say");
-					io.sockets.emit('message',
-									{"source": user,
-									"message": "SAY: " + params.message,
-									"target": target,
-									"type": "room"
-									});
-				}else if(type == "priv"){
-					db.get("SELECT owner FROM rooms WHERE name = ?", target, function (err, row){
-						if(row != undefined){
-							if(user == row.owner){
-								db.run("UPDATE rooms SET private = ? WHERE name = ?", [params.value, target]);
-							}
-						}
-					});
-				}
-			}else{
-				console.log("Insufficient perms");
-			}
-			
-		});
-	
-	});
+
+  	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
 	
   });
   
