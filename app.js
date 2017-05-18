@@ -470,7 +470,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('tip', function(data){
-	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket.id, data.room, data.message);
+	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket, data.room, data.message);
   });
   
   socket.on('list', function(data){
@@ -491,18 +491,25 @@ io.sockets.on('connection', function(socket) {
   })
 })
  
-function tipUser(user, target, amount, sId, room, message){
+function tipUser(user, target, amount, socket, room, message){
+
+	if(user.toLowerCase() == target.toLowerCase())
+	{
+		sendInlineError(socket, "You cannot tip yourself!", room, "room");
+		return;
+	}
+
 	if(amount <= 0 && userType[user] < 3){
-		io.sockets.sockets[sId].emit('notice', "Invalid tip amount!");
+		socket.emit('notice', "Invalid tip amount!");
 		return;
 	}
 	db.serialize(function(){
 		db.get("SELECT balance FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row){
 			if(row != undefined){
-				if(row.balance > amount){
+				if(row.balance >= amount){
 					db.get("SELECT balance FROM users WHERE name = ? COLLATE NOCASE", target, function(err2, row2){
 						if(row2 === undefined){
-							io.sockets.sockets[sId].emit('notice', "User does not exist! Check your spelling.");
+							socket.emit('notice', "User does not exist! Check your spelling.");
 							return;
 						}
 						db.run("UPDATE users SET balance = ? WHERE name = ? COLLATE NOCASE", [row.balance - amount, user]);
@@ -515,7 +522,7 @@ function tipUser(user, target, amount, sId, room, message){
 							}
 							
 						}
-						io.sockets.sockets[sId].emit('balance', row.balance - amount);
+						socket.emit('balance', row.balance - amount);
 						if(message != undefined && message != ""){
 							io.sockets.emit('message',
 								{"source": "[System]",
@@ -766,7 +773,7 @@ function runCommand(socket, msg, words, srcUser)
 				return;
 			}
 
-			tipUser(srcUser, words[1], parseFloat(words[2]), socket.id, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
+			tipUser(srcUser, words[1], parseFloat(words[2]), socket, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
 			break;
 
 		case 'urgent':
@@ -837,10 +844,15 @@ function runCommand(socket, msg, words, srcUser)
 			db.serialize(function(){
 				db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
 			});
-			io.sockets.sockets[targetSocket].emit('notice', "You have been banned!");
-			setTimeout(function(){
-				io.sockets.sockets[targetSocket].disconnect();
-			}, 2000);
+
+			if(targetSocket != undefined)
+			{
+				targetSocket.emit('notice', "You have been banned!");
+				setTimeout(function(){
+					io.sockets.sockets[targetSocket].disconnect();
+				}, 2000);
+			}
+			
 			break;
 		case 'userlevel':
 			if(userType[srcUser] < 3)
