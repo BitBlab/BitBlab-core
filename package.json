@@ -37,8 +37,8 @@
   "repository": "",
   "licenses": [
     {
-      "type": "MIT",
-      "url": "http://opensource.org/licenses/MIT"
+      "type": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
     }
   ]
 }
