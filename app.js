@@ -230,7 +230,7 @@ io.sockets.on('connection', function(socket) {
 	
 	if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
 		io.sockets.sockets[socket.id].emit('message',
-				{"source": "System",
+				{"source": "[System]",
 				"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
 				"target": msg.target,
 				"type": msg.type,
@@ -518,14 +518,14 @@ function tipUser(user, target, amount, sId, room, message){
 						io.sockets.sockets[sId].emit('balance', row.balance - amount);
 						if(message != undefined && message != ""){
 							io.sockets.emit('message',
-								{"source": "System",
+								{"source": "[System]",
 								"message": '<span class="label label-success">' + user + ' tipped ' + target + ' ' + amount + ' mBTC! (' + message +')</span>',
 								"target": room,
 								"type": "room",
 								});
 						}else{
 							io.sockets.emit('message',
-								{"source": "System",
+								{"source": "[System]",
 								"message": '<span class="label label-success">' + user + ' tipped ' + target + ' ' + amount + ' mBTC!</span>',
 								"target": room,
 								"type": "room",
@@ -881,7 +881,7 @@ function runCommand(socket, msg, words, srcUser)
 			break;
 		
 		case 'html':
-			// intentionally left blank, probably gonna deprecate it
+			sendInlineError(socket, "This command has been removed!", msg.target, msg.type);
 			break;
 		
 		case 'callmod':
@@ -903,11 +903,24 @@ function runCommand(socket, msg, words, srcUser)
 			break;
 		
 		case 'say':
+			sendInlineError(socket, "This command is currently unavailable!", msg.target, msg.type);
 			//TODO
 			break;
 		
 		default:
-			io.sockets.sockets[socket.id].emit('cli-error', "Invalid command!");
+			sendInlineError(socket, "Invalid command: " + words[0], msg.target, msg.type);
+			break;
 	}
 
+}
+
+function sendInlineError(socket, message, target, type)
+{
+	socket.emit('message',
+				{"source": "[System]",
+				"message": "<span class='label label-danger'>" + message + "</span>",
+				"target": target,
+				"type": type,
+				"tip": 0
+				});
 }
