@@ -38,6 +38,8 @@ var path = require('path');
 var njscrypto = require('node-cryptojs-aes');
 var CryptoJS = njscrypto.CryptoJS;
 
+var bcrypt = require('bcrypt');
+
 var app = express();
 
 //database stuff
@@ -163,7 +165,7 @@ io.sockets.on('connection', function(socket) {
 						
 						userColors[userName] = "black";
 				
-						if(aes){
+						/*if(aes){
 							pass = CryptoJS.AES.decrypt(pass, socket.id).toString(CryptoJS.enc.Utf8);
 						}
 						
@@ -171,24 +173,22 @@ io.sockets.on('connection', function(socket) {
 						
 						shasum.update(pass);
 						
-						pass = shasum.digest('hex');
-					
-						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, pass, 0, 0, 0]);
-						// Does not exist ... so, proceed
-						clients[userName] = socket.id;
-						socketsOfClients[socket.id] = userName;
-						userNameAvailable(socket.id, userName);
-						//onlineUsers.push(userName);
-						uRooms[userName] == ["Main"];
-						userType = 0;
-						//userJoined(userName, "Main");
+						pass = shasum.digest('hex');*/
 						
-						
-					/*}else{
-						io.sockets.sockets[socket.id].emit('error', "Invalid key!");
-						return;
-					}*/
-				//});
+						bcrypt.genSalt(10, function(err, salt) {
+							bcrypt.hash(pass, salt, function(err, hash) {
+								console.log(hash);
+								db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 0, 0, 0]);
+								// Does not exist ... so, proceed
+								clients[userName] = socket.id;
+								socketsOfClients[socket.id] = userName;
+								userNameAvailable(socket.id, userName);
+								//onlineUsers.push(userName);
+								uRooms[userName] == ["Main"];
+								userType = 0;
+								//userJoined(userName, "Main");
+							});
+						});
 			} else if (clients[userName] === socket.id) {
 				// Ignore for now
 			} else {
@@ -204,7 +204,7 @@ io.sockets.on('connection', function(socket) {
 	var pass = data.pass;
 	var aes = data.aes;	
 	
-	db.serialize(function(){
+	/*db.serialize(function(){
 		db.get("SELECT * FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row){
 			if(row === undefined){
 				console.log("no row");
@@ -242,6 +242,45 @@ io.sockets.on('connection', function(socket) {
 			}else{
 				invalidLogin(socket.id);
 			}
+		});*/
+		
+	db.serialize(function() {
+		db.get("SELECT * FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row) {
+			if(row === undefined) {
+				console.log("User not found in db");
+				invalidLogin(socket.id);
+				return;
+			}
+			
+			console.log("Inside db get");
+			
+			user = row.name;
+			bcrypt.compare(pass, row.pass, function(err, res) {
+				console.log(row.pass)
+				console.log("Inside bcrypt compare");
+				console.log(res);
+				if(res == true) {
+					console.log("Authenticated " + row.name);
+					clients[user] == socket.id;
+					socketsOfClients[socket.id] = user;
+					uRooms[user] = ["Main"];
+					userType[user] = row.type;
+					loginComplete(socket.id, user, row.balance);
+					
+					console.log("Right before db get 2");
+					
+					db.get("SELECT colors FROM colors WHERE name = ?", user, function(err, row) {
+						console.log("Inside second db get");
+						if(row != undefined) {
+							userColors[user] = row.colors;
+						} else {
+							userColors[user] = "black";
+						}
+					});
+				} else {
+					invalidLogin(socket.id);
+				}
+			});
 		});
 	});
   });
@@ -772,6 +811,7 @@ function loginComplete(sId, uName, bal){
  
 function userNameAlreadyInUse(sId, uName) {
   setTimeout(function() {
+	console.log("Username already in use");
     io.sockets.sockets[sId].emit('error', { "userNameInUse" : true });
   }, 500);
 }

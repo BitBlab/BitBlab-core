@@ -147,7 +147,7 @@ function setUsername() {
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
 	}
 	
-	pass = CryptoJS.AES.encrypt(pass, clientID).toString();
+	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
 	
 	myUserName=stripHTML(myUserName);
     socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
@@ -162,7 +162,7 @@ function login(){
 	myUserName = $('input#userName').val();
 	var pass = $('input#password').val();
 	
-	pass = CryptoJS.AES.encrypt(pass, clientID).toString();
+	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
 	
 	socket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
 	console.log('Attempting to login');
@@ -363,6 +363,7 @@ $(function() {
  
   socket.on('id', function(id){
 	clientID = id;
+	console.log(id);
   });
   socket.on('userJoined', function(msg) {
     appendNewUser(msg, true);
