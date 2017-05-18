@@ -259,7 +259,7 @@ io.sockets.on('connection', function(socket) {
 				console.log(row.pass)
 				console.log("Inside bcrypt compare");
 				console.log(res);
-				if(res == true) {
+				if(res) {
 					console.log("Authenticated " + row.name);
 					clients[user] == socket.id;
 					socketsOfClients[socket.id] = user;
@@ -578,7 +578,7 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('addroom', function(data){
 	if(data.indexOf(" ") != -1){
-		io.sockets.sockets[socket.id].emit('error', "Rooms cannot contain spaces!");
+		io.sockets.sockets[socket.id].emit('cli-error', "Rooms cannot contain spaces!");
 		return;
 	}
 	db.serialize(function(){
@@ -620,7 +620,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('error', 'colErr');
+										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -661,7 +661,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('error', 'colErr');
+										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -812,19 +812,20 @@ function loginComplete(sId, uName, bal){
 function userNameAlreadyInUse(sId, uName) {
   setTimeout(function() {
 	console.log("Username already in use");
-    io.sockets.sockets[sId].emit('error', { "userNameInUse" : true });
+    io.sockets.sockets[sId].emit('cli-error', { "userNameInUse" : true });
   }, 500);
 }
 
 function userNameTooLong(sId){
 	setTimeout(function() {
-    io.sockets.sockets[sId].emit('error', { "userNameTooLong" : true});
+    io.sockets.sockets[sId].emit('cli-error', { "userNameTooLong" : true});
   }, 500);
 }
 
 function invalidLogin(sId){
+	console.log("Invalid login");
 	setTimeout(function() {
-    io.sockets.sockets[sId].emit('error', { "invalidLogin" : true});
+    io.sockets.sockets[sId].emit('cli-error', { "invalidLogin" : true});
   }, 500);
 }
 

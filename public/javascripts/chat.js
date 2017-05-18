@@ -391,7 +391,7 @@ $(function() {
 	
   });
  
-  socket.on('error', function(msg) {
+  socket.on('cli-error', function(msg) {
       if (msg.userNameInUse) {
           setFeedback("<span style='color: red'> Username already in use. Try another name.</span>");
       }else if(msg.userNameTooLong){
