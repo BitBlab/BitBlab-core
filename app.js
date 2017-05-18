@@ -130,12 +130,7 @@ io.sockets.on('connection', function(socket) {
 	
 	var userName = data.user;
 	var pass = data.pass;
-	var aes = data.aes;
 	var key = data.key;
-	/*if(key == ""){
-		return;
-	}*/
-
 	
 	if(userName.length > 15){
 		userNameTooLong(socket.id);
@@ -153,44 +148,25 @@ io.sockets.on('connection', function(socket) {
 				unameExists = false;
 			}
 			
-			// Is this an existing user name?
 			if (!unameExists) {
-				//fs.readFile("./keys.dat", 'utf8', function(err, data){
-					//json = JSON.parse(data);
-					//if(json[key] !== undefined && json[key] == false){
-						validKey = true;
-						//json[key] = true;
-						//newJson = JSON.stringify(json);
-						//fs.writeFile("./keys.dat", newJson, function(){});
-						
-						userColors[userName] = "black";
 				
-						/*if(aes){
-							pass = CryptoJS.AES.decrypt(pass, socket.id).toString(CryptoJS.enc.Utf8);
-						}
+				userColors[userName] = "black";
+				
+				bcrypt.genSalt(10, function(err, salt) {
+					bcrypt.hash(pass, salt, function(err, hash) {
+						console.log(hash);
+						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 0, 0, 0]);
 						
-						var shasum = require('crypto').createHash('sha1');
+						clients[userName] = socket.id;
+						socketsOfClients[socket.id] = userName;
+						userNameAvailable(socket.id, userName);
 						
-						shasum.update(pass);
-						
-						pass = shasum.digest('hex');*/
-						
-						bcrypt.genSalt(10, function(err, salt) {
-							bcrypt.hash(pass, salt, function(err, hash) {
-								console.log(hash);
-								db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 0, 0, 0]);
-								// Does not exist ... so, proceed
-								clients[userName] = socket.id;
-								socketsOfClients[socket.id] = userName;
-								userNameAvailable(socket.id, userName);
-								//onlineUsers.push(userName);
-								uRooms[userName] == ["Main"];
-								userType = 0;
-								//userJoined(userName, "Main");
-							});
-						});
+						uRooms[userName] == ["Main"];
+						userType = 0;
+					});
+				});
 			} else if (clients[userName] === socket.id) {
-				// Ignore for now
+				// Its a bot! maybe
 			} else {
 				userNameAlreadyInUse(socket.id, userName);
 			}
@@ -202,47 +178,6 @@ io.sockets.on('connection', function(socket) {
   socket.on('login', function(data){
 	var user = data.user;
 	var pass = data.pass;
-	var aes = data.aes;	
-	
-	/*db.serialize(function(){
-		db.get("SELECT * FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row){
-			if(row === undefined){
-				console.log("no row");
-				invalidLogin(socket.id);
-				return;
-			}
-			user = row.name;
-			console.log("all ok");	
-			if(aes){
-				pass = CryptoJS.AES.decrypt(pass, socket.id).toString(CryptoJS.enc.Utf8);
-			}
-			
-			var shasum = require('crypto').createHash('sha1');
-			shasum.update(pass);
-			pass = shasum.digest('hex');
-			
-			if(row.pass === pass){
-				console.log("pass is good");
-				clients[user] = socket.id;
-				socketsOfClients[socket.id] = user;
-				//onlineUsers.push(user);
-				uRooms[user] == ["Main"];
-				userType[user] = row.type;
-				loginComplete(socket.id, user, row.balance);
-				//userJoined(user, "Main");
-				
-				db.get("SELECT colors FROM colors WHERE name = ?", user, function(err, row){
-					if(row != undefined){
-						userColors[user] = row.colors;
-					}else{
-						userColors[user] = "black";
-					}
-				});
-				
-			}else{
-				invalidLogin(socket.id);
-			}
-		});*/
 		
 	db.serialize(function() {
 		db.get("SELECT * FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row) {
@@ -289,12 +224,7 @@ io.sockets.on('connection', function(socket) {
 	if(msg.message === undefined){
 		return;
 	}
-    var srcUser;
-    if (msg.inferSrcUser || msg.source != undefined) {
-      io.sockets.sockets[socket.id].emit('notice', "inferSrcUser or source is no longer used. Please update your code!");
-    }
-	
-	srcUser = socketsOfClients[socket.id];
+    var srcUser = socketsOfClients[socket.id];
 	
 	var curTime = new Date().getTime();
 	
@@ -308,16 +238,19 @@ io.sockets.on('connection', function(socket) {
 				});
 		userMsgTime[srcUser] = curTime;
 		return;
-	}else{
+	} else{
 		userMsgTime[srcUser] = curTime;
 	}
 	
 	var words = msg.message.split(" ");
 	var keepHtml = false;
+	
 	if(words[0] == "/tip"){
 		tipUser(srcUser, words[1], parseFloat(words[2]), socket.id, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
 		return;
-	}else if(words[0] == "/urgent" && userType[srcUser] >= 3){
+	} 
+	
+	else if(words[0] == "/urgent" && userType[srcUser] >= 3){
 		io.sockets.emit('message',
 				{"source": srcUser,
 				"message": "<span class='label label-danger'>" + msg.message.substring(words[0].length) + "</span>",
@@ -326,7 +259,9 @@ io.sockets.on('connection', function(socket) {
 				"tip": 0
 				});
 		return;
-	}else if(words[0] == "/balance" && userType[srcUser] >= 3){
+	} 
+	
+	else if(words[0] == "/balance" && userType[srcUser] >= 3){
 		var targetUser = words[1];
 		var action = words[2];
 		var amount = words[3];
@@ -334,31 +269,37 @@ io.sockets.on('connection', function(socket) {
 		if(action == "add"){
 			db.serialize(function(){
 				db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
-					if(row != undfined){
+					if(row != undefined){
 						var newbal = row.balance + amount;
 						db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
 						io.sockets.sockets[socket.id].emit('balance', newbal);
 					}
 				});
 			});
-		}else if(action == "remove"){
+		}
+		
+		else if(action == "remove"){
 			db.serialize(function(){
 				db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
-					if(row != undfined){
+					if(row != undefined){
 						var newbal = row.balance - amount;
 						db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
 						io.sockets.sockets[socket.id].emit('balance', newbal);
 					}
 				});
 			});
-		}else if(action == "set"){
+		}
+		
+		else if(action == "set"){
 			db.serialize(function(){
 				db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
 				io.sockets.sockets[socket.id].emit('balance', amount);
 			});
 		}
 		return;
-	}else if(words[0] == "/ban" && userType[srcUser] >= 3){
+	}
+	
+	else if(words[0] == "/ban" && userType[srcUser] >= 3){
 		var targetSocket = socketsOfClients[words[1]];
 		db.serialize(function(){
 			db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
@@ -367,7 +308,9 @@ io.sockets.on('connection', function(socket) {
 		setTimeout(function(){
 			io.sockets.sockets[targetSocket].disconnect();
 		}, 2000);
-	}else if(words[0] == "/userlevel" && userType[srcUser] >= 3){
+	}
+	
+	else if(words[0] == "/userlevel" && userType[srcUser] >= 3){
 		var trgt = words[1];
 		var level = parseInt(words[2]);
 		
@@ -377,11 +320,15 @@ io.sockets.on('connection', function(socket) {
 			userType[trgt] = level;
 			io.sockets.sockets[clients[trgt]].emit('notice', "Your user type has been set to " + level);
 		});
-	}else if(words[0] == "/pm"){
+	}
+	
+	else if(words[0] == "/pm"){
 		msg.type = "priv";
 		msg.target = words[1];
 		msg.message.substring(4 + words[1].length);
-	}else if(words[0] == "/topic"){
+	}
+	
+	else if(words[0] == "/topic"){
 		var targetRoom = msg.target;
 		var uLvl = userType[srcUser];
 		var topic = msg.message.substring(7);
@@ -412,15 +359,19 @@ io.sockets.on('connection', function(socket) {
 		
 		});
 		
-	}else if(words[0] == "/html" && userType[srcUser] >= 2){
+	}
+	
+	else if(words[0] == "/html" && userType[srcUser] >= 2){
 		msg.message = msg.message.substring(6);
 		keepHtml = true;
-	}else if(words[0] == "/callmod"){
+	}
+	
+	else if(words[0] == "/callmod"){
 		if(clients["AHuman"] != undefined){
 			io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
 		}
 		
-		if(clients["MrRoboman4321"] != undefined){
+		if(clients["Ronoman"] != undefined){
 			io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
 		}
 		
