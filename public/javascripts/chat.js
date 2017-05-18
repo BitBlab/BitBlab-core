@@ -16,7 +16,7 @@
    
 */
 
-const host = "localhost"; //set the server address
+//var host = "localhost"; //set the server address
 
 var socket;
 var myUserName;
@@ -45,6 +45,8 @@ var clientID;
 var easterEggSound = false;
 
 //var pingSound = new Audio("/sounds/ping.mp3");
+
+var host = prompt("Server location")
 
 function enableMsgInput(enable) {
   $('input#msg').prop('disabled', !enable);
@@ -388,6 +390,8 @@ $(function() {
 	addRoom("Main");
 	balance = msg.balance;
 	setBalance(balance);
+	
+	document.getElementById("loginform").remove();
 	
   });
  

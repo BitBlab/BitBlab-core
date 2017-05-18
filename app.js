@@ -155,7 +155,7 @@ io.sockets.on('connection', function(socket) {
 				bcrypt.genSalt(10, function(err, salt) {
 					bcrypt.hash(pass, salt, function(err, hash) {
 						console.log(hash);
-						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 0, 0, 0]);
+						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 1, 0, 0]);
 						
 						clients[userName] = socket.id;
 						socketsOfClients[socket.id] = userName;

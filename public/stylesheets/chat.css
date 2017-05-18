@@ -3,17 +3,20 @@
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 700px;
-  max-width: 700px;
-  height: 550px;
+  width: 87vw;
+  height: 70vh;
 }
  
 #roomWindow {
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 250px;
-  height: 550px;
+  width: 10vw;
+  height: 70vh;
+}
+ 
+#newRoom {
+	width: 10vw;
 }
  
 .shadow {
@@ -38,7 +41,7 @@
 	min-width: 100px;
 }
 
- .privTag {
+.privTag {
  color:green;
 }
 
@@ -53,6 +56,11 @@
   white-space: pre-wrap;
 }
 
-.tipSpan{
+.tipSpan {
 	width: 50px;
+}
+
+body {
+   margin: 0;
+   padding: 0;
 }
