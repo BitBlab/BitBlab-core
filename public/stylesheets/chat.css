@@ -4,7 +4,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   width: 87vw;
-  height: 77vh;
+  height: 76vh;
 }
  
 #roomWindow {
@@ -12,7 +12,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   width: 10vw;
-  height: 77vh;
+  height: 76vh;
 }
  
 #newRoom {
@@ -28,7 +28,7 @@
 }
 
 .allMsg {
-	max-width: 550px !important;
+	max-width: 75vw !important;
 	white-space: pre-wrap;
 	word-break: break-all;
 }
