@@ -866,7 +866,7 @@ function runCommand(socket, msg, words, srcUser)
 
 			var trgt = words[1];
 			var level = parseInt(words[2]);
-			
+			userLevel[trgt] = level;
 			db.serialize(function(){
 			    console.log("User " + trgt + " level set to " + level);
 				db.run("UPDATE users SET type = ? WHERE name = ?", [level, trgt]);
