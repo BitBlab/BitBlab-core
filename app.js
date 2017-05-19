@@ -208,6 +208,7 @@ io.sockets.on('connection', function(socket) {
 					socketsOfClients[socket.id] = user;
 					uRooms[user] = ["Main"];
 					userType[user] = row.type;
+					console.log(row.balance);
 					loginComplete(socket.id, user, row.balance);
 					onlineUsers.push(user);
 					

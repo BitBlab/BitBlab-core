@@ -134,6 +134,7 @@ function setFeedback(fb) {
 }
 
 function setBalance(bal) {
+  bal = Math.round(100*bal)/100; 
   $('span#feedback').html("Balance: " + bal + " mBTC");
 }
  
