@@ -512,7 +512,10 @@ $(function() {
 		var room = $('input#newinput').val();
 		$('input#newinput').val("");
 		room = stripHTML(room);
-		socket.emit('addroom', room);
+		if(room != "") {
+			room = stripHTML(room);
+			socket.emit('addroom', room);
+		}
 		//toggleRoom(room);
 		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
 	}
@@ -530,6 +533,13 @@ $(function() {
 	}
   });
   
+  $('input#buycolor').click(function(e){
+	if ($('input#buycolorinput').val() != "") {
+		socket.emit("buycolor", $('input#buycolorinput').val());
+	}
+	$('input#buycolorinput').val("");
+  });
+  
   $('input#newbutton').click(function(e){
 	var room = $('input#newinput').val();
 	$('input#newinput').val("");
@@ -537,12 +547,7 @@ $(function() {
 		room = stripHTML(room);
 		socket.emit('addroom', room);
 	}
-	//toggleRoom(room);
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
   });
   
-  $('input#buycolor').click(function(e){
-	socket.emit("buycolor", $('input#buycolorinput').val());
-	$('input#buycolorinput').val("");
-  });
+  
 });
