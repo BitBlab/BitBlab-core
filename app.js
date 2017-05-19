@@ -160,6 +160,7 @@ io.sockets.on('connection', function(socket) {
 						clients[userName] = socket.id;
 						socketsOfClients[socket.id] = userName;
 						userNameAvailable(socket.id, userName);
+						onlineUsers.push(userName);
 						
 						uRooms[userName] == ["Main"];
 						userType = 0;
@@ -185,6 +186,10 @@ io.sockets.on('connection', function(socket) {
 				console.log("User not found in db");
 				invalidLogin(socket.id);
 				return;
+			}else if(row.status == 2)
+			{
+				socket.emit('cli-error', "You have been banned and thus cannot log in!");
+				return;
 			}
 			
 			console.log("Inside db get");
@@ -201,6 +206,7 @@ io.sockets.on('connection', function(socket) {
 					uRooms[user] = ["Main"];
 					userType[user] = row.type;
 					loginComplete(socket.id, user, row.balance);
+					onlineUsers.push(user);
 					
 					console.log("Right before db get 2");
 					
@@ -230,7 +236,7 @@ io.sockets.on('connection', function(socket) {
 	
 	if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
 		io.sockets.sockets[socket.id].emit('message',
-				{"source": "System",
+				{"source": "[System]",
 				"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
 				"target": msg.target,
 				"type": msg.type,
@@ -243,152 +249,18 @@ io.sockets.on('connection', function(socket) {
 	}
 	
 	var words = msg.message.split(" ");
-	var keepHtml = false;
-	
-	if(words[0] == "/tip"){
-		tipUser(srcUser, words[1], parseFloat(words[2]), socket.id, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
-		return;
-	} 
-	
-	else if(words[0] == "/urgent" && userType[srcUser] >= 3){
-		io.sockets.emit('message',
-				{"source": srcUser,
-				"message": "<span class='label label-danger'>" + msg.message.substring(words[0].length) + "</span>",
-				"target": msg.target,
-				"type": msg.type,
-				"tip": 0
-				});
-		return;
-	} 
-	
-	else if(words[0] == "/balance" && userType[srcUser] >= 3){
-		var targetUser = words[1];
-		var action = words[2];
-		var amount = words[3];
-		
-		if(action == "add"){
-			db.serialize(function(){
-				db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
-					if(row != undefined){
-						var newbal = row.balance + amount;
-						db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-						io.sockets.sockets[socket.id].emit('balance', newbal);
-					}
-				});
-			});
-		}
-		
-		else if(action == "remove"){
-			db.serialize(function(){
-				db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
-					if(row != undefined){
-						var newbal = row.balance - amount;
-						db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-						io.sockets.sockets[socket.id].emit('balance', newbal);
-					}
-				});
-			});
-		}
-		
-		else if(action == "set"){
-			db.serialize(function(){
-				db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
-				io.sockets.sockets[socket.id].emit('balance', amount);
-			});
-		}
+
+	if(msg.message.startsWith("/"))
+	{
+		runCommand(socket, msg, words, srcUser);
 		return;
 	}
-	
-	else if(words[0] == "/ban" && userType[srcUser] >= 3){
-		var targetSocket = socketsOfClients[words[1]];
-		db.serialize(function(){
-			db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
-		});
-		io.sockets.sockets[targetSocket].emit('notice', "You have been banned!");
-		setTimeout(function(){
-			io.sockets.sockets[targetSocket].disconnect();
-		}, 2000);
-	}
-	
-	else if(words[0] == "/userlevel" && userType[srcUser] >= 3){
-		var trgt = words[1];
-		var level = parseInt(words[2]);
-		
-		db.serialize(function(){
-		    console.log("User " + trgt + " level set to " + level);
-			db.run("UPDATE users SET type = ? WHERE name = ?", [level, trgt]);
-			userType[trgt] = level;
-			io.sockets.sockets[clients[trgt]].emit('notice', "Your user type has been set to " + level);
-		});
-	}
-	
-	else if(words[0] == "/pm"){
-		msg.type = "priv";
-		msg.target = words[1];
-		msg.message.substring(4 + words[1].length);
-	}
-	
-	else if(words[0] == "/topic"){
-		var targetRoom = msg.target;
-		var uLvl = userType[srcUser];
-		var topic = msg.message.substring(7);
-		
-		db.serialize(function(){
-			db.get("SELECT owner FROM rooms WHERE name = ?", targetRoom, function(err, row){
-				if(row != undefined){
-					if(row.owner == srcUser || uLvl >= 3){
-						db.run("UPDATE rooms SET topic = ? WHERE name = ?", [topic, targetRoom]);
-						io.sockets.sockets[socket.id].emit('message',
-														{"source": "[System]",
-														"message": "<span class='label label-success'>Topic set!</span>",
-														"target": msg.target,
-														"type": msg.type,
-														"tip": 0
-														});
-					}else{
-						io.sockets.sockets[socket.id].emit('message',
-														{"source": "[System]",
-														"message": "<span class='label label-danger'>You don't have permission to do that!</span>",
-														"target": msg.target,
-														"type": msg.type,
-														"tip": 0
-														});
-					}
-				}
-			});
-		
-		});
-		
-	}
-	
-	else if(words[0] == "/html" && userType[srcUser] >= 2){
-		msg.message = msg.message.substring(6);
-		keepHtml = true;
-	}
-	
-	else if(words[0] == "/callmod"){
-		if(clients["AHuman"] != undefined){
-			io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
-		}
-		
-		if(clients["Ronoman"] != undefined){
-			io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
-		}
-		
-		io.sockets.emit('message',
-		{"source": "[System]",
-		"message": "<span class='label label-warning'>A moderator has been requested by " + srcUser + "</span>",
-		"target": msg.target,
-		"type": msg.type,
-		"tip": 0
-		});
-		
-		return;
-	}
+
+	/*var keepHtml = false;
 	
 	if(!keepHtml){
 		msg.message = stripHTML(msg.message);
-	}
+	}*/
 
 	var winnings = checkReward(msg.message, userType[srcUser]);
 	if(winnings > 0){
@@ -478,52 +350,8 @@ io.sockets.on('connection', function(socket) {
   })
   
   socket.on('command', function(data){
-	var type = data.type;
-	var params = data.params;
-	var target = data.target;
-	
-	var user = socketsOfClients[socket.id];
-	
-	db.serialize(function(){
-		db.get("SELECT type FROM users WHERE name = ?", user, function(err, row){
-			if(row === undefined){
-				console.log("User doesn't exist... WTF???");
-				return;
-			}
-			
-			var userType = row.type;
-			
-			if(userType >= 3){
-				if(type == "ban"){
-					var targetSocket = socketsOfClients[data.params["user"]];
-					io.sockets.sockets[targetSocket].emit('notice', "You have been banned!");
-					setTimeout(function(){
-						io.sockets.sockets[targetSocket].disconnect();
-					}, 500);
-				}else if(type == "say"){
-					console.log("command type is say");
-					io.sockets.emit('message',
-									{"source": user,
-									"message": "SAY: " + params.message,
-									"target": target,
-									"type": "room"
-									});
-				}else if(type == "priv"){
-					db.get("SELECT owner FROM rooms WHERE name = ?", target, function (err, row){
-						if(row != undefined){
-							if(user == row.owner){
-								db.run("UPDATE rooms SET private = ? WHERE name = ?", [params.value, target]);
-							}
-						}
-					});
-				}
-			}else{
-				console.log("Insufficient perms");
-			}
-			
-		});
-	
-	});
+
+  	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
 	
   });
   
@@ -648,7 +476,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('tip', function(data){
-	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket.id, data.room, data.message);
+	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket, data.room, data.message);
   });
   
   socket.on('list', function(data){
@@ -669,18 +497,25 @@ io.sockets.on('connection', function(socket) {
   })
 })
  
-function tipUser(user, target, amount, sId, room, message){
+function tipUser(user, target, amount, socket, room, message){
+
+	if(user.toLowerCase() == target.toLowerCase())
+	{
+		sendInlineError(socket, "You cannot tip yourself!", room, "room");
+		return;
+	}
+
 	if(amount <= 0 && userType[user] < 3){
-		io.sockets.sockets[sId].emit('notice', "Invalid tip amount!");
+		socket.emit('notice', "Invalid tip amount!");
 		return;
 	}
 	db.serialize(function(){
 		db.get("SELECT balance FROM users WHERE name = ? COLLATE NOCASE", user, function(err, row){
 			if(row != undefined){
-				if(row.balance > amount){
+				if(row.balance >= amount){
 					db.get("SELECT balance FROM users WHERE name = ? COLLATE NOCASE", target, function(err2, row2){
 						if(row2 === undefined){
-							io.sockets.sockets[sId].emit('notice', "User does not exist! Check your spelling.");
+							socket.emit('notice', "User does not exist! Check your spelling.");
 							return;
 						}
 						db.run("UPDATE users SET balance = ? WHERE name = ? COLLATE NOCASE", [row.balance - amount, user]);
@@ -693,17 +528,17 @@ function tipUser(user, target, amount, sId, room, message){
 							}
 							
 						}
-						io.sockets.sockets[sId].emit('balance', row.balance - amount);
+						socket.emit('balance', row.balance - amount);
 						if(message != undefined && message != ""){
 							io.sockets.emit('message',
-								{"source": "System",
+								{"source": "[System]",
 								"message": '<span class="label label-success">' + user + ' tipped ' + target + ' ' + amount + ' mBTC! (' + message +')</span>',
 								"target": room,
 								"type": "room",
 								});
 						}else{
 							io.sockets.emit('message',
-								{"source": "System",
+								{"source": "[System]",
 								"message": '<span class="label label-success">' + user + ' tipped ' + target + ' ' + amount + ' mBTC!</span>',
 								"target": room,
 								"type": "room",
@@ -928,4 +763,217 @@ function fixOnlineList(){
 			onlineUsers.splice(i, 1);
 		}
 	}
+}
+
+function runCommand(socket, msg, words, srcUser)
+{
+	words[0] = words[0].substr(1);
+
+	switch(words[0])
+	{
+		case 'tip':
+
+			if(words.length < 3)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /tip [user] [mBtc] (message)", msg.target, msg.type);
+				return;
+			}
+
+			tipUser(srcUser, words[1], parseFloat(words[2]), socket, msg.target, msg.message.substring(words[0].length + words[1].length + words[2].length + 3));
+			break;
+
+		case 'urgent':
+			if(userType[srcUser])
+			{
+				io.sockets.emit('message',
+								{"source": srcUser,
+									"message": "<span class='label label-danger'>" + msg.message.substring(words[0].length+2) + "</span>",
+									"target": msg.target,
+									"type": msg.type,
+									"tip": 0
+								});
+			}
+			break;
+
+		case 'balance':
+			if(userType[srcUser] < 3)
+				break;
+
+			var targetUser = words[1];
+			var action = words[2];
+			var amount = words[3];
+			
+			if(action == "add"){
+				db.serialize(function(){
+					db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
+						if(row != undefined){
+							var newbal = row.balance + amount;
+							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
+							io.sockets.sockets[socket.id].emit('balance', newbal);
+						}
+					});
+				});
+			}
+			
+			else if(action == "remove"){
+				db.serialize(function(){
+					db.get("SELECT balance FROM users WHERE name = ?", targetUser, function(err, row){
+						if(row != undefined){
+							var newbal = row.balance - amount;
+							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
+							io.sockets.sockets[socket.id].emit('balance', newbal);
+						}
+					});
+				});
+			}
+			
+			else if(action == "set"){
+				db.serialize(function(){
+					db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
+					io.sockets.sockets[socket.id].emit('balance', amount);
+				});
+			}
+
+			break;
+		
+		case 'ban':
+			if(userType[srcUser] < 3)
+				break;
+
+			if(words.length < 2)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /ban [user]", msg.target, msg.type);
+				return;
+			}
+
+			var targetSocket = io.sockets.sockets[clients[words[1]]];
+			db.serialize(function(){
+				db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
+			});
+
+			if(targetSocket != undefined)
+			{
+				targetSocket.emit('cli-error', "You have been banned!");
+				setTimeout(function(){
+					targetSocket.disconnect();
+				}, 2000);
+			}else{
+				sendInlineError(socket, "[WARN] USER NOT ONLINE", msg.target, msg.type);
+			}
+			
+			break;
+		case 'userlevel':
+			if(userType[srcUser] < 3)
+				break;
+
+			if(words.length < 3)
+			{
+				sendInlineError(socket, "Missing parameters! Usage: /userlevel [user] [level]");
+				return;
+			}
+
+			var trgt = words[1];
+			var level = parseInt(words[2]);
+			userLevel[trgt] = level;
+			db.serialize(function(){
+			    console.log("User " + trgt + " level set to " + level);
+				db.run("UPDATE users SET type = ? WHERE name = ?", [level, trgt]);
+			});
+				
+			break;
+		case 'pm':
+			msg.type = "priv";
+			msg.target = words[1];
+			msg.message.substring(4 + words[1].length);
+			break;
+		
+		case 'topic':
+			var targetRoom = msg.target;
+			var uLvl = userType[srcUser];
+			var topic = msg.message.substring(7);
+			
+			db.serialize(function(){
+				db.get("SELECT owner FROM rooms WHERE name = ?", targetRoom, function(err, row){
+					if(row != undefined){
+						if(row.owner == srcUser || uLvl >= 3){
+							db.run("UPDATE rooms SET topic = ? WHERE name = ?", [topic, targetRoom]);
+							io.sockets.sockets[socket.id].emit('message',
+															{"source": "[System]",
+															"message": "<span class='label label-success'>Topic set!</span>",
+															"target": msg.target,
+															"type": msg.type,
+															"tip": 0
+															});
+						}else{
+							io.sockets.sockets[socket.id].emit('message',
+															{"source": "[System]",
+															"message": "<span class='label label-danger'>You don't have permission to do that!</span>",
+															"target": msg.target,
+															"type": msg.type,
+															"tip": 0
+															});
+						}
+					}
+				});
+			
+			});
+			break;
+		
+		case 'html':
+			sendInlineError(socket, "This command has been removed!", msg.target, msg.type);
+			break;
+		
+		case 'callmod':
+			/*console.log("calling all mods");
+			for(i=0; i<onlineUsers.length; i++)
+			{
+				console.log(onlineUsers[i]);
+				if(userType[onlineUsers[i]] >= 3)
+				{
+					console.log(onlineUsers[i] + " is a mod");
+					console.log(clients[onlineUsers[i]]);
+					io.sockets.sockets[clients[onlineUsers[i]]].emit('modalert', msg.target);
+				}else{
+					console.log(onlineUsers[i] + " is a not a mod: " + userType[onlineUsers[i]]);
+				}
+			}*/
+
+			if(clients["AHuman"] != undefined){
+				io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
+			}
+			
+			if(clients["Ronoman"] != undefined){
+				io.sockets.sockets[clients["Ronoman"]].emit('modalert', msg.target);
+			}
+			
+			io.sockets.emit('message',
+			{"source": "[System]",
+			"message": "<span class='label label-warning'>A moderator has been requested by " + srcUser + "</span>",
+			"target": msg.target,
+			"type": msg.type,
+			"tip": 0
+			});
+			break;
+		
+		case 'say':
+			sendInlineError(socket, "This command is currently unavailable!", msg.target, msg.type);
+			//TODO
+			break;
+		
+		default:
+			sendInlineError(socket, "Invalid command: " + words[0], msg.target, msg.type);
+			break;
+	}
+
+}
+
+function sendInlineError(socket, message, target, type)
+{
+	socket.emit('message',
+				{"source": "[System]",
+				"message": "<span class='label label-danger'>" + message + "</span>",
+				"target": target,
+				"type": type,
+				"tip": 0
+				});
 }
