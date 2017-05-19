@@ -51,10 +51,6 @@ var host = window.location.hostname.split(":")[0]
 function enableMsgInput(enable) {
   $('input#msg').prop('disabled', !enable);
 }
- 
-function removeLoginForm() {
-  $('#loginform').remove();
-}
 
 function enableNewInput(enable){
 	$('input#newinput').prop('disabled', !enable);
@@ -371,7 +367,6 @@ $(function() {
 	setRooms(msg.rooms);
 	setColors(msg.colors);
     enableMsgInput(true);
-    removeLoginForm();
 	enableNewInput(true);
 	addRoom("Main");
 	balance = msg.balance;
@@ -425,6 +420,7 @@ $(function() {
   });
   
   socket.on('modalert', function(data){
+	console.log('modalert');
 	$('#room-' + data).addClass('btn-danger').removeClass('btn-default').removeClass('btn-warning');
 	pingSound();
 	alert("Mod requested in " + data);

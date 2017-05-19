@@ -162,7 +162,7 @@ io.sockets.on('connection', function(socket) {
 						userNameAvailable(socket.id, userName);
 						onlineUsers.push(userName);
 						
-						uRooms[userName] == ["Main"];
+						uRooms[userName] = ["Main"];
 						userType = 0;
 					});
 				});
@@ -201,7 +201,10 @@ io.sockets.on('connection', function(socket) {
 				console.log(res);
 				if(res) {
 					console.log("Authenticated " + row.name);
-					clients[user] == socket.id;
+					clients[user] = socket.id;
+					console.log(clients);
+					console.log(user);
+					console.log(socket.id)
 					socketsOfClients[socket.id] = user;
 					uRooms[user] = ["Main"];
 					userType[user] = row.type;
@@ -484,6 +487,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('disconnect', function() {
+	console.log("Disconnecting " + uName);
     var uName = socketsOfClients[socket.id];
     delete socketsOfClients[socket.id];
     delete clients[uName];
@@ -589,7 +593,6 @@ function loginComplete(sId, uName, bal){
 			}
 			
 			console.log('Sending welcome msg to ' + uName + ' at ' + sId);
-			//io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(Object.keys(clients)), message: "Login successful!", "rooms": rooms, "colors": colors, "balance": bal });
 			io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(onlineUsers), message: "Login successful!", "rooms": rooms, "colors": colors, "balance": bal });
 		});
 	});
@@ -937,12 +940,14 @@ function runCommand(socket, msg, words, srcUser)
 					console.log(onlineUsers[i] + " is a not a mod: " + userType[onlineUsers[i]]);
 				}
 			}*/
-
-			if(clients["AHuman"] != undefined){
+			console.log(onlineUsers);
+			console.log(clients);
+			if(onlineUsers.indexOf("AHuman") != -1){
 				io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
 			}
 			
-			if(clients["Ronoman"] != undefined){
+			if(onlineUsers.indexOf("Ronoman") != -1){
+				console.log("Callmod Ronoman");
 				io.sockets.sockets[clients["Ronoman"]].emit('modalert', msg.target);
 			}
 			
