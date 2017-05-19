@@ -185,6 +185,10 @@ io.sockets.on('connection', function(socket) {
 				console.log("User not found in db");
 				invalidLogin(socket.id);
 				return;
+			}else if(row.status == 2)
+			{
+				socket.emit('cli-error', "You have been banned and thus cannot log in!");
+				return;
 			}
 			
 			console.log("Inside db get");
@@ -840,17 +844,19 @@ function runCommand(socket, msg, words, srcUser)
 				return;
 			}
 
-			var targetSocket = socketsOfClients[words[1]];
+			var targetSocket = io.sockets.sockets[clients[words[1]]];
 			db.serialize(function(){
 				db.run("UPDATE users SET status = ? WHERE name = ?", [2, words[1]]);
 			});
 
 			if(targetSocket != undefined)
 			{
-				targetSocket.emit('notice', "You have been banned!");
+				targetSocket.emit('cli-error', "You have been banned!");
 				setTimeout(function(){
-					io.sockets.sockets[targetSocket].disconnect();
+					targetSocket.disconnect();
 				}, 2000);
+			}else{
+				sendInlineError(socket, "[WARN] USER NOT ONLINE", msg.target, msg.type);
 			}
 			
 			break;
