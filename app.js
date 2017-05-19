@@ -160,6 +160,7 @@ io.sockets.on('connection', function(socket) {
 						clients[userName] = socket.id;
 						socketsOfClients[socket.id] = userName;
 						userNameAvailable(socket.id, userName);
+						onlineUsers.push(userName);
 						
 						uRooms[userName] == ["Main"];
 						userType = 0;
@@ -205,6 +206,7 @@ io.sockets.on('connection', function(socket) {
 					uRooms[user] = ["Main"];
 					userType[user] = row.type;
 					loginComplete(socket.id, user, row.balance);
+					onlineUsers.push(user);
 					
 					console.log("Right before db get 2");
 					
@@ -922,6 +924,20 @@ function runCommand(socket, msg, words, srcUser)
 			break;
 		
 		case 'callmod':
+			/*console.log("calling all mods");
+			for(i=0; i<onlineUsers.length; i++)
+			{
+				console.log(onlineUsers[i]);
+				if(userType[onlineUsers[i]] >= 3)
+				{
+					console.log(onlineUsers[i] + " is a mod");
+					console.log(clients[onlineUsers[i]]);
+					io.sockets.sockets[clients[onlineUsers[i]]].emit('modalert', msg.target);
+				}else{
+					console.log(onlineUsers[i] + " is a not a mod: " + userType[onlineUsers[i]]);
+				}
+			}*/
+
 			if(clients["AHuman"] != undefined){
 				io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
 			}
