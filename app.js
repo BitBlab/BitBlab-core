@@ -132,10 +132,7 @@ io.sockets.on('connection', function(socket) {
 	var pass = data.pass;
 	var key = data.key;
 	
-	if(userName.length > 15){
-		userNameTooLong(socket.id);
-		return;
-	}
+	if(!checkUserName(socket.id, userName)) return;
 	
 	var unameExists = true;
 	
@@ -606,9 +603,33 @@ function userNameAlreadyInUse(sId, uName) {
   }, 500);
 }
 
+function checkUserName(sId, username){
+	var regex = new RegExp("^([a-zA-Z0-9]|[-_]){3,15}$");
+
+	if(username.length > 15){
+		io.sockets.sockets[sId].emit('cli-error', "Your username is too long! (3-15 characters)");
+		return false;
+	}else if(username.length < 3){
+		io.sockets.sockets[sId].emit('cli-error', "Your username is too short! (3-15 characters)");
+		return false;
+	}
+
+	if(!regex.test(username)){
+		io.sockets.sockets[sId].emit('cli-error', "Your username contains invalid characters!");
+		return false;
+	}
+	return true;
+}
+
 function userNameTooLong(sId){
 	setTimeout(function() {
     io.sockets.sockets[sId].emit('cli-error', { "userNameTooLong" : true});
+  }, 500);
+}
+
+function userNameTooShort(sId){
+	setTimeout(function() {
+    io.sockets.sockets[sId].emit('cli-error', { "userNameTooShort" : true});
   }, 500);
 }
 
