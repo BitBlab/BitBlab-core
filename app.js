@@ -107,7 +107,6 @@ var server = app.listen(app.get('port'), function(){
 
 var io = socketio.listen(server);
 var clients = {};
-var socketsOfClients = {};
 var onlineUsers = [];
 
 setInterval(function(){
@@ -154,7 +153,6 @@ io.sockets.on('connection', function(socket) {
 						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 1, 0, 0]);
 						
 						clients[userName] = socket.id;
-						socketsOfClients[socket.id] = userName;
 						userNameAvailable(socket.id, userName);
 						onlineUsers.push(userName);
 						
@@ -195,7 +193,6 @@ io.sockets.on('connection', function(socket) {
 				if(res) {
 					console.log("Authenticated " + row.name);
 					clients[user] = socket.id;
-					socketsOfClients[socket.id] = user;
 					//uRooms[user] = ["Main"];
 					userType[user] = row.type;
 					console.log(row.balance);
@@ -224,7 +221,7 @@ io.sockets.on('connection', function(socket) {
 	if(msg.message === undefined){
 		return;
 	}
-    var srcUser = socketsOfClients[socket.id];
+    var srcUser = clients[getKeyByVal(clients, socket.id)];
 	
 	var curTime = new Date().getTime();
 	
@@ -351,21 +348,21 @@ io.sockets.on('connection', function(socket) {
 	db.serialize(function(){
 		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data, socketsOfClients[socket.id], "", false, "", ""]);
+				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data, clients[getKeyByVal(clients, socket.id)], "", false, "", ""]);
 				rooms.push(data);
 				io.sockets.emit('newroom', data);
 				io.sockets.sockets[socket.id].emit('joinroom', {"room":data, "topic": ""});
-				userJoined(socketsOfClients[socket.id], data);
+				userJoined(clients[getKeyByVal(clients, socket.id)], data);
 			}else{
 				io.sockets.sockets[socket.id].emit('joinroom', {"room": row.name, "topic": row.topic});
-				userJoined(socketsOfClients[socket.id], row.name);
+				userJoined(clients[getKeyByVal(clients, socket.id)], row.name);
 			}
 		});
 	});
   });
   
   socket.on('buycolor', function(color){
-	var user = socketsOfClients[socket.id];
+	var user = clients[getKeyByVal(clients, socket.id)];
 	console.log(user + " trying to buy color " + color);
 	db.serialize(function(){
 		db.get("SELECT balance FROM users WHERE name = ?", user, function(err, row){
@@ -464,7 +461,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('tip', function(data){
-	tipUser(socketsOfClients[socket.id], data.user, data.amount, socket, data.room, data.message);
+	tipUser(clients[getKeyByVal(clients, socket.id)], data.user, data.amount, socket, data.room, data.message);
   });
   
   socket.on('list', function(data){
@@ -473,8 +470,8 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('disconnect', function() {
 	console.log("Disconnecting " + uName);
-    var uName = socketsOfClients[socket.id];
-    delete socketsOfClients[socket.id];
+    var uName = clients[getKeyByVal(clients, socket.id)];
+    delete clients[getKeyByVal(clients, socket.id)];
     delete clients[uName];
 	onlineUsers.splice(onlineUsers.indexOf(uName), 1);
 	
@@ -990,4 +987,14 @@ function sendInlineError(socket, message, target, type)
 				"type": type,
 				"tip": 0
 				});
+}
+
+function getKeyByVal(obj, key) {
+	for( var prop in obj ) {
+        if( obj.hasOwnProperty(prop)) {
+             if(this[prop] === key) {
+                 return prop;
+			 }
+        }
+    }
 }
