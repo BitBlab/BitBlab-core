@@ -101,7 +101,7 @@ function appendNewMessage(msg) {
 }
  
 function appendNewUser(data, notify) {
-  var user = data.userName;
+  var user = data.name;
   var room = data.room;
   //$('select#users').append($('<option></option>').val(uName).html(uName));
   if (notify){
@@ -119,6 +119,7 @@ function appendNewUser(data, notify) {
 function handleUserLeft(msg) {
     //$("select#users option[value='" + msg.userName + "']").remove();
 	//this will do something soon
+	console.log(msg);
 	return;
 }
  
@@ -178,8 +179,6 @@ function sendMessage() {
 		color = "#000000";
 	}
 	
-	console.log(color);
-	
 	//msg=stripHTML(msg);
 	
 	msg = replaceEmotes(msg);
@@ -219,17 +218,13 @@ function sendMessage() {
     $('input#msg').val("");
 }
  
-function setCurrentUsers(usersStr) {
-    //$('select#users >option').remove();
-    //appendNewUser('All', false);
-    JSON.parse(usersStr).forEach(function(name) {
-        appendNewUser(name, false);
-    });
-    //$('select#users').val('All').attr('selected', true);
+function setCurrentUsers(users) {
+	JSON.parse(users).forEach(function(name) {
+		appendNewUser({'name':name, 'room':'Main'}, false);
+	});
 }
  
 function setRooms(rooms){
-	console.log(rooms);
 	//$('#roomWindow >a').remove();
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;

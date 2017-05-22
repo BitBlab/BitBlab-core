@@ -218,10 +218,11 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('message', function(msg) {
+	console.log(onlineUsers());
 	if(msg.message === undefined){
 		return;
 	}
-    var srcUser = clients[getKeyByVal(clients, socket.id)];
+    var srcUser = getKeyByVal(clients, socket.id);
 	
 	var curTime = new Date().getTime();
 	
@@ -352,10 +353,10 @@ io.sockets.on('connection', function(socket) {
 				rooms.push(data);
 				io.sockets.emit('newroom', data);
 				io.sockets.sockets[socket.id].emit('joinroom', {"room":data, "topic": ""});
-				userJoined(clients[getKeyByVal(clients, socket.id)], data);
+				userJoined(getKeyByVal(clients, socket.id), data);
 			}else{
 				io.sockets.sockets[socket.id].emit('joinroom', {"room": row.name, "topic": row.topic});
-				userJoined(clients[getKeyByVal(clients, socket.id)], row.name);
+				userJoined(getKeyByVal(clients, socket.id), row.name);
 			}
 		});
 	});
@@ -470,9 +471,8 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('disconnect', function() {
 	console.log("Disconnecting " + uName);
-    var uName = clients[getKeyByVal(clients, socket.id)];
+    var uName = getKeyByVal(clients, socket.id);
     delete clients[uName];
-	onlineUsers().splice(onlineUsers().indexOf(uName), 1);
 	
 	io.sockets.emit('userLeft', uName);
 	
@@ -538,7 +538,8 @@ function tipUser(user, target, amount, socket, room, message){
 
 function userJoined(uName, room) {
     Object.values(clients).forEach(function(sId) {
-      io.sockets.sockets[sId].emit('userJoined', { "userName": uName, "room": room });
+	  console.log(uName);
+      io.sockets.sockets[sId].emit('userJoined', { "name": uName, "room": room });
     })
 }
  
@@ -977,9 +978,10 @@ function sendInlineError(socket, message, target, type)
 function getKeyByVal(obj, key) {
 	for( var prop in obj ) {
         if( obj.hasOwnProperty(prop)) {
-             if(this[prop] === key) {
-                 return prop;
-			 }
+            if(obj[prop] === key) {
+			    console.log(prop);
+                return prop;
+			}
         }
     }
 }
@@ -988,7 +990,7 @@ function onlineUsers() {
 	users = []
 	for (var key in clients) {
 		if (clients.hasOwnProperty(key)) {
-			users.push(clients[key]);
+			users.push(key);
 		}
 	}
 	return users;
