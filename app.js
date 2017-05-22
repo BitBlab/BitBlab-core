@@ -107,7 +107,7 @@ var server = app.listen(app.get('port'), function(){
 
 var io = socketio.listen(server);
 var clients = {};
-var onlineUsers = [];
+//var onlineUsers = [];
 
 setInterval(function(){
 	io.sockets.emit('advert', advertisements[adNum]);
@@ -154,7 +154,7 @@ io.sockets.on('connection', function(socket) {
 						
 						clients[userName] = socket.id;
 						userNameAvailable(socket.id, userName);
-						onlineUsers.push(userName);
+						//onlineUsers.push(userName);
 						
 						//uRooms[userName] = ["Main"];
 						userType = 0;
@@ -197,7 +197,7 @@ io.sockets.on('connection', function(socket) {
 					userType[user] = row.type;
 					console.log(row.balance);
 					loginComplete(socket.id, user, row.balance);
-					onlineUsers.push(user);
+					//onlineUsers.push(user);
 					
 					console.log("Right before db get 2");
 					
@@ -465,15 +465,14 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('list', function(data){
-	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers));
+	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers()));
   });
   
   socket.on('disconnect', function() {
 	console.log("Disconnecting " + uName);
     var uName = clients[getKeyByVal(clients, socket.id)];
-    delete clients[getKeyByVal(clients, socket.id)];
     delete clients[uName];
-	onlineUsers.splice(onlineUsers.indexOf(uName), 1);
+	onlineUsers().splice(onlineUsers().indexOf(uName), 1);
 	
 	io.sockets.emit('userLeft', uName);
 	
@@ -538,7 +537,7 @@ function tipUser(user, target, amount, socket, room, message){
 } 
 
 function userJoined(uName, room) {
-    Object.keys(socketsOfClients).forEach(function(sId) {
+    Object.values(clients).forEach(function(sId) {
       io.sockets.sockets[sId].emit('userJoined', { "userName": uName, "room": room });
     })
 }
@@ -558,8 +557,7 @@ function userNameAvailable(sId, uName) {
 			}
 			
 			console.log('Sending welcome msg to ' + uName + ' at ' + sId);
-			//io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(Object.keys(clients)), message: "Username available! Registration complete.", "rooms": rooms, "colors": colors, "balance": 0 });
-			io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(onlineUsers), message: "Username available! Registration complete.", "rooms": rooms, "colors": colors, "balance": 0 });
+			io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(onlineUsers()), message: "Username available! Registration complete.", "rooms": rooms, "colors": colors, "balance": 0 });
 		});
 	});
 }
@@ -575,7 +573,7 @@ function loginComplete(sId, uName, bal){
 			}
 			
 			console.log('Sending welcome msg to ' + uName + ' at ' + sId);
-			io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(onlineUsers), message: "Login successful!", "rooms": rooms, "colors": colors, "balance": bal });
+			io.sockets.sockets[sId].emit('welcome', { "userName" : uName, "currentUsers": JSON.stringify(onlineUsers()), message: "Login successful!", "rooms": rooms, "colors": colors, "balance": bal });
 		});
 	});
 }
@@ -765,11 +763,11 @@ function stripHTML(str){
 }
 
 function fixOnlineList(){
-	for(var i=0; i < onlineUsers.length; i++){
-		if(typeof onlineUsers[i] != 'undefined'){
+	for(var i=0; i < onlineUsers().length; i++){
+		if(typeof onlineUsers()[i] != 'undefined'){
 			continue;
 		}else{
-			onlineUsers.splice(i, 1);
+			onlineUsers().splice(i, 1);
 		}
 	}
 }
@@ -933,26 +931,13 @@ function runCommand(socket, msg, words, srcUser)
 			break;
 		
 		case 'callmod':
-			/*console.log("calling all mods");
-			for(i=0; i<onlineUsers.length; i++)
-			{
-				console.log(onlineUsers[i]);
-				if(userType[onlineUsers[i]] >= 3)
-				{
-					console.log(onlineUsers[i] + " is a mod");
-					console.log(clients[onlineUsers[i]]);
-					io.sockets.sockets[clients[onlineUsers[i]]].emit('modalert', msg.target);
-				}else{
-					console.log(onlineUsers[i] + " is a not a mod: " + userType[onlineUsers[i]]);
-				}
-			}*/
-			console.log(onlineUsers);
+			console.log(onlineUsers());
 			console.log(clients);
-			if(onlineUsers.indexOf("AHuman") != -1){
+			if(onlineUsers().indexOf("AHuman") != -1){
 				io.sockets.sockets[clients["AHuman"]].emit('modalert', msg.target);
 			}
 			
-			if(onlineUsers.indexOf("Ronoman") != -1){
+			if(onlineUsers().indexOf("Ronoman") != -1){
 				console.log("Callmod Ronoman");
 				io.sockets.sockets[clients["Ronoman"]].emit('modalert', msg.target);
 			}
@@ -997,4 +982,14 @@ function getKeyByVal(obj, key) {
 			 }
         }
     }
+}
+
+function onlineUsers() {
+	users = []
+	for (var key in clients) {
+		if (clients.hasOwnProperty(key)) {
+			users.push(clients[key]);
+		}
+	}
+	return users;
 }
