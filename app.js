@@ -1039,6 +1039,12 @@ function checkColorValid(socket, color)
 }
 
 function checkColorTooBright(socket, color){
+
+	if(color.length == 3)
+	{
+		color = color[0] + color[0] + color[1] + color[1] +color[2] + color[2];
+	}
+	console.log("checking bright: " + color);
 	var rgb = parseInt(color, 16);   // convert rrggbb to decimal
 	var r = (rgb >> 16) & 0xff;  // extract red
 	var g = (rgb >>  8) & 0xff;  // extract green
