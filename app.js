@@ -608,18 +608,6 @@ function checkUserName(sId, username){
 	return true;
 }
 
-function userNameTooLong(sId){
-	setTimeout(function() {
-    io.sockets.sockets[sId].emit('cli-error', { "userNameTooLong" : true});
-  }, 500);
-}
-
-function userNameTooShort(sId){
-	setTimeout(function() {
-    io.sockets.sockets[sId].emit('cli-error', { "userNameTooShort" : true});
-  }, 500);
-}
-
 function invalidLogin(sId){
 	console.log("Invalid login");
 	setTimeout(function() {
