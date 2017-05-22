@@ -352,10 +352,10 @@ io.sockets.on('connection', function(socket) {
 				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data, clients[getKeyByVal(clients, socket.id)], "", false, "", ""]);
 				rooms.push(data);
 				io.sockets.emit('newroom', data);
-				io.sockets.sockets[socket.id].emit('joinroom', {"room":data, "topic": ""});
+				socket.emit('joinroom', {"room":data, "topic": ""});
 				userJoined(getKeyByVal(clients, socket.id), data);
 			}else{
-				io.sockets.sockets[socket.id].emit('joinroom', {"room": row.name, "topic": row.topic});
+				socket.emit('joinroom', {"room": row.name, "topic": row.topic});
 				userJoined(getKeyByVal(clients, socket.id), row.name);
 			}
 		});
@@ -757,13 +757,13 @@ function stripHTML(str){
 }
 
 function fixOnlineList(){
-	for(var i=0; i < onlineUsers().length; i++){
+	/*for(var i=0; i < onlineUsers().length; i++){
 		if(typeof onlineUsers()[i] != 'undefined'){
 			continue;
 		}else{
 			onlineUsers().splice(i, 1);
 		}
-	}
+	}*/
 }
 
 function runCommand(socket, msg, words, srcUser)
