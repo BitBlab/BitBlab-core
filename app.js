@@ -365,6 +365,12 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('buycolor', function(color){
+
+  	if(!checkColorValid(color)){
+  		socket.emit("cli-error", "Invalid color!");
+  		return;
+  	}
+
 	var user = socketsOfClients[socket.id];
 	console.log(user + " trying to buy color " + color);
 	db.serialize(function(){
@@ -978,4 +984,11 @@ function sendInlineError(socket, message, target, type)
 				"type": type,
 				"tip": 0
 				});
+}
+
+function checkColorValid(color)
+{
+	var regex = new RegExp("^[a-zA-Z0-9]{3,}$");
+
+	return regex.test(color);
 }
