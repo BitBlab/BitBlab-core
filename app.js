@@ -69,7 +69,7 @@ db.serialize(function(){
 
 });
 
-var uRooms = {};
+//var uRooms = {};
 var userType = {};
 var userColors = {};
 var userMsgTime = {};
@@ -124,13 +124,12 @@ setInterval(function(){
 io.sockets.on('connection', function(socket) {
   console.log("CONNECTION");
   
-  io.sockets.sockets[socket.id].emit('id', socket.id);
+  socket.emit('id', socket.id);
   
   socket.on('register', function(data) {
 	
 	var userName = data.user;
 	var pass = data.pass;
-	var key = data.key;
 	
 	if(userName.length > 15){
 		userNameTooLong(socket.id);
@@ -162,7 +161,7 @@ io.sockets.on('connection', function(socket) {
 						userNameAvailable(socket.id, userName);
 						onlineUsers.push(userName);
 						
-						uRooms[userName] = ["Main"];
+						//uRooms[userName] = ["Main"];
 						userType = 0;
 					});
 				});
@@ -196,17 +195,11 @@ io.sockets.on('connection', function(socket) {
 			
 			user = row.name;
 			bcrypt.compare(pass, row.pass, function(err, res) {
-				console.log(row.pass)
-				console.log("Inside bcrypt compare");
-				console.log(res);
 				if(res) {
 					console.log("Authenticated " + row.name);
 					clients[user] = socket.id;
-					console.log(clients);
-					console.log(user);
-					console.log(socket.id)
 					socketsOfClients[socket.id] = user;
-					uRooms[user] = ["Main"];
+					//uRooms[user] = ["Main"];
 					userType[user] = row.type;
 					console.log(row.balance);
 					loginComplete(socket.id, user, row.balance);
@@ -259,12 +252,6 @@ io.sockets.on('connection', function(socket) {
 		runCommand(socket, msg, words, srcUser);
 		return;
 	}
-
-	/*var keepHtml = false;
-	
-	if(!keepHtml){
-		msg.message = stripHTML(msg.message);
-	}*/
 
 	var winnings = checkReward(msg.message, userType[srcUser]);
 	if(winnings > 0){

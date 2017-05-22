@@ -16,8 +16,6 @@
    
 */
 
-//var host = "localhost"; //set the server address
-
 var socket;
 var myUserName;
 
@@ -416,7 +414,6 @@ $(function() {
   });
   
   socket.on('joinroom', function(data){
-	
 	toggleRoom(data.room, data.topic);
   });
   
