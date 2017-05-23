@@ -55,6 +55,7 @@ db.serialize(function(){
 		db.run("CREATE TABLE rooms (name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
+		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
 	}
 });
 
@@ -222,9 +223,14 @@ io.sockets.on('connection', function(socket) {
 	if(msg.message === undefined){
 		return;
 	}
+	
     var srcUser = getKeyByVal(clients, socket.id);
 	
 	var curTime = new Date().getTime();
+	
+	db.serialize(function() {
+		db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
+	});
 	
 	if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
 		io.sockets.sockets[socket.id].emit('message',
@@ -260,17 +266,6 @@ io.sockets.on('connection', function(socket) {
 		});
 		//msg.message = msg.message + "<span class = 'label label-primary' style='float:right'>+" + winnings + "</span>";
 	}
-
-	/*var iof = msg.message.indexOf("#");
-	if(iof != -1){
-		var left = msg.message.substring(0, iof);
-		var right = msg.message.substring(iof);
-		var rightwords = right.split(" ");
-		var quote = '"';
-		left = left + "<a href='javascript:void(0)' onclick='addRoom(" + quote + rightwords[0].substring(1) + quote + ");'>";
-		right = right.slice(0, rightwords[0].length) + "</a>" + right.slice(rightwords[0].length);
-		msg.message = left + right;
-	}*/
 	
 	msg.message = addEmotes(msg.message);
 	
@@ -311,13 +306,13 @@ io.sockets.on('connection', function(socket) {
 	
     if (msg.type == "room") {
       // broadcast
-	io.sockets.emit('message',
-	  {"source": srcUser,
-	   "message": msg.message,
-	   "target": msg.target,
-	   "type": msg.type,
-	   "tip": winnings
-	   });
+		io.sockets.emit('message',
+		  {"source": srcUser,
+		   "message": msg.message,
+		   "target": msg.target,
+		   "type": msg.type,
+		   "tip": winnings
+		   });
     } else if(msg.type == "priv"){
 	if(msg.target.indexOf("PM:") == -1){
 		msg.target = "PM:" + msg.target;
