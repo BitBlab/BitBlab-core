@@ -110,6 +110,11 @@ var io = socketio.listen(server);
 var clients = {};
 //var onlineUsers = [];
 
+// define socket.io namespaces for different room types
+var nsCommand = io.of('/'); //used for some functions, probably
+var nsPublic = io.of('/public');
+var nsPrivate = io.of('/private');
+
 setInterval(function(){
 	io.sockets.emit('advert', advertisements[adNum]);
 	adNum++;
@@ -218,118 +223,6 @@ io.sockets.on('connection', function(socket) {
 	});
   });
   
-  socket.on('message', function(msg) {
-	console.log(onlineUsers());
-	if(msg.message === undefined){
-		return;
-	}
-	
-    var srcUser = getKeyByVal(clients, socket.id);
-	
-	var curTime = new Date().getTime();
-	
-	db.serialize(function() {
-		db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
-	});
-	
-	if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
-		io.sockets.sockets[socket.id].emit('message',
-				{"source": "[System]",
-				"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
-				"target": msg.target,
-				"type": msg.type,
-				"tip": 0
-				});
-		userMsgTime[srcUser] = curTime;
-		return;
-	} else{
-		userMsgTime[srcUser] = curTime;
-	}
-	
-	var words = msg.message.split(" ");
-
-	if(msg.message.startsWith("/"))
-	{
-		runCommand(socket, msg, words, srcUser);
-		return;
-	}
-
-	var winnings = checkReward(msg.message, userType[srcUser]);
-	if(winnings > 0){
-		db.serialize(function(){
-			db.get("SELECT balance FROM users WHERE name = ?", srcUser, function(err, row){
-				var bal = row.balance;
-				bal = bal + winnings;
-				db.run("UPDATE users SET balance = ? WHERE name = ?", [bal, srcUser]);
-				io.sockets.sockets[socket.id].emit('tip', {"amount": winnings, "type": "auto"});
-			});
-		});
-		//msg.message = msg.message + "<span class = 'label label-primary' style='float:right'>+" + winnings + "</span>";
-	}
-	
-	msg.message = addEmotes(msg.message);
-	
-	for(var i = 0; i < words.length; i++) {
-        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
-		    if(userType[srcUser] >= 1){
-		        console.log("Link detected");
-                var url = words[i];
-                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
-			}else{
-			    words[i] = "[Warning: links may contain malware]" + words[i];
-			}
-        }else if(words[i].indexOf("#", 0) == 0){
-			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
-		}
-    }
-	
-	msg.message = words.join(" ");
-	
-	if(typeof msg.color != "undefined"){
-		var owned = userColors[srcUser].split(",");
-		var authed = false;
-		
-		for(var i=0; i < owned.length; i++){
-			if(owned[i] == msg.color){
-				authed = true;
-				break;
-			}
-		}
-		if(authed){
-			if(msg.color == "rainbow"){
-				msg.message = rainbow(msg.message);
-			}else{
-				msg.message = "<span style='color:" + msg.color + "'>" + msg.message + "</span>";
-			}
-		}
-	}
-	
-    if (msg.type == "room") {
-      // broadcast
-		io.sockets.emit('message',
-		  {"source": srcUser,
-		   "message": msg.message,
-		   "target": msg.target,
-		   "type": msg.type,
-		   "tip": winnings
-		   });
-    } else if(msg.type == "priv"){
-	if(msg.target.indexOf("PM:") == -1){
-		msg.target = "PM:" + msg.target;
-	}
-	io.sockets.sockets[socket.id].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
-	io.sockets.sockets[clients[msg.target.substring(3)]].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
-      // Look up the socket id
-	io.sockets.sockets[clients[msg.target.substring(3)]].emit('message',
-	  {"source": srcUser,
-	   "message": msg.message,
-	   "target": msg.target,
-	   "type": msg.type,
-	   "tip": winnings
-	   });
-    }
-  })
-  
   socket.on('command', function(data){
 
   	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
@@ -337,21 +230,25 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('addroom', function(data){
-	if(data.indexOf(" ") != -1){
+	if(data.name.indexOf(" ") != -1){
 		io.sockets.sockets[socket.id].emit('cli-error', "Rooms cannot contain spaces!");
 		return;
 	}
 	db.serialize(function(){
-		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data, function(err, row){
+		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data, clients[getKeyByVal(clients, socket.id)], "", false, "", ""]);
+				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, clients[getKeyByVal(clients, socket.id)], "", data.type, "", ""]);
 				rooms.push(data);
-				io.sockets.emit('newroom', data);
-				socket.emit('joinroom', {"room":data, "topic": ""});
+				if(data.type == 0)
+					io.sockets.emit('newroom', data);
+				socket.emit('joinroom', {"type":data.type,"room":data.name, "topic": ""});
 				userJoined(getKeyByVal(clients, socket.id), data);
 			}else{
-				socket.emit('joinroom', {"room": row.name, "topic": row.topic});
-				userJoined(getKeyByVal(clients, socket.id), row.name);
+				if(row.type == 0)
+				{
+					socket.emit('joinroom', {"room": row.name, "topic": row.topic});
+					userJoined(getKeyByVal(clients, socket.id), row.name);
+				}
 			}
 		});
 	});
@@ -479,8 +376,106 @@ io.sockets.on('connection', function(socket) {
     // relay this message to all the clients
  
     userLeft(uName);
-  })
-})
+  });
+}); //end main namespace
+
+nsPublic.on('connection', function(socket){
+	socket.on('message', function(msg) {
+		console.log(onlineUsers());
+		if(msg.message === undefined){
+			return;
+		}
+		
+	    var srcUser = getKeyByVal(clients, socket.id);
+		
+		var curTime = new Date().getTime();
+		
+		db.serialize(function() {
+			db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
+		});
+		
+		if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
+			socket.emit('message',
+					{"source": "[System]",
+					"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
+					"target": msg.target,
+					"type": msg.type,
+					"tip": 0
+					});
+			userMsgTime[srcUser] = curTime;
+			return;
+		} else{
+			userMsgTime[srcUser] = curTime;
+		}
+		
+		var words = msg.message.split(" ");
+
+		if(msg.message.startsWith("/"))
+		{
+			runCommand(socket, msg, words, srcUser);
+			return;
+		}
+
+		var winnings = checkReward(msg.message, userType[srcUser]);
+		if(winnings > 0){
+			db.serialize(function(){
+				db.get("SELECT balance FROM users WHERE name = ?", srcUser, function(err, row){
+					var bal = row.balance;
+					bal = bal + winnings;
+					db.run("UPDATE users SET balance = ? WHERE name = ?", [bal, srcUser]);
+					io.sockets.sockets[socket.id].emit('tip', {"amount": winnings, "type": "auto"});
+				});
+			});
+			//msg.message = msg.message + "<span class = 'label label-primary' style='float:right'>+" + winnings + "</span>";
+		}
+		
+		msg.message = addEmotes(msg.message);
+		
+		for(var i = 0; i < words.length; i++) {
+	        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
+			    if(userType[srcUser] >= 1){
+			        console.log("Link detected");
+	                var url = words[i];
+	                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
+				}else{
+				    words[i] = "[Warning: links may contain malware]" + words[i];
+				}
+	        }else if(words[i].indexOf("#", 0) == 0){
+				words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+			}
+	    }
+		
+		msg.message = words.join(" ");
+		
+		if(typeof msg.color != "undefined"){
+			var owned = userColors[srcUser].split(",");
+			var authed = false;
+			
+			for(var i=0; i < owned.length; i++){
+				if(owned[i] == msg.color){
+					authed = true;
+					break;
+				}
+			}
+			if(authed){
+				if(msg.color == "rainbow"){
+					msg.message = rainbow(msg.message);
+				}else{
+					msg.message = "<span style='color:" + msg.color + "'>" + msg.message + "</span>";
+				}
+			}
+		}
+		
+		//broadcast
+		nsPublic.emit('message',
+		  {"source": srcUser,
+		   "message": msg.message,
+		   "target": msg.target,
+		   "type": msg.type,
+		   "tip": winnings
+		   });
+  });
+}); //end nsPublic
  
 function tipUser(user, target, amount, socket, room, message){
 
