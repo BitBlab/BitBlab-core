@@ -521,7 +521,7 @@ $(function() {
 	$('input#newinput').val("");
 	if(room != "") {
 		room = stripHTML(room);
-		commandSocket.emit('addroom', room);
+		addRoom(room);
 	}
   });
   
