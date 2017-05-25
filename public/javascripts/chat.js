@@ -16,7 +16,9 @@
    
 */
 
-var socket;
+var commandSocket;
+var publicSocket;
+
 var myUserName;
 
 var emoteCodes = [":happy:", ":sad:", ":mad:", ":cool:", ":XD:", ":gasp:", ":speechless:", ":tongue:", ":up:", ":down:", ":grin:"];
@@ -124,9 +126,8 @@ function handleUserLeft(msg) {
 }
  
 
-socket = io.connect("http://" + host + ":3000"); //personal internal testing (AHuman)
-//socket = io.connect("http://chat.bitblab.net:3000"); //NEW external release
-//socket = io.connect("http://localhost:3000"); //internal testing on local machine
+commandSocket = io.connect("http://" + host + ":3000");
+publicSocket = io.connect("http://" + host + ":3000/public");
 
 function setFeedback(fb) {
   $('span#feedback').html(fb);
@@ -148,9 +149,9 @@ function setUsername() {
 	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
 	
 	myUserName=stripHTML(myUserName);
-    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
+    commandSocket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
-	addRoom("Main");
+	//addRoom("Main");
 	//roomList["Main"] = true;
 	//currentRoom = "Main";
 	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
@@ -162,7 +163,7 @@ function login(){
 	
 	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
 	
-	socket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
+	commandSocket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
 	console.log('Attempting to login');
 	//currentRoom = "Main";
 	//roomList["Main"] = true;
@@ -206,7 +207,7 @@ function sendMessage() {
 		pmUser(trgt.substring(3), msg);
 		return;
 	}else{
-		socket.emit('message',
+		publicSocket.emit('message',
                 {
                   "message": msg,
 				  "color": color,
@@ -288,7 +289,7 @@ function pmUser(user, msg){
 	if(color == "" || color === undefined){
 		color = "#000000";
 	}
-	socket.emit('message',
+	publicSocket.emit('message',
                 {
                   "message": msg,
 				  "color": color,
@@ -331,31 +332,31 @@ function pingSound(){
 	}
 }
 
-function addRoom(room){
-	socket.emit('addroom', room);
+function addRoom(room){ //public rooms ONLY
+	commandSocket.emit('addroom', {"name":room, "type":0});
 }
 
 $(function() {
   enableMsgInput(false);
  
  
-  socket.on('id', function(id){
+  commandSocket.on('id', function(id){
 	clientID = id;
 	console.log(id);
   });
-  socket.on('userJoined', function(msg) {
+  commandSocket.on('userJoined', function(msg) {
     appendNewUser(msg, true);
   });
    
-  socket.on('userLeft', function(msg) {
+  commandSocket.on('userLeft', function(msg) {
     handleUserLeft(msg);
   });
  
-  socket.on('message', function(msg) {
+  publicSocket.on('message', function(msg) {
     appendNewMessage(msg);
   });
  
-  socket.on('welcome', function(msg) {
+  commandSocket.on('welcome', function(msg) {
     setFeedback("<span style='color: green'> " + msg.message + "</span>");
     setCurrentUsers(msg.currentUsers);
 	setRooms(msg.rooms);
@@ -370,7 +371,7 @@ $(function() {
 	
   });
  
-  socket.on('cli-error', function(msg) {
+  commandSocket.on('cli-error', function(msg) {
       if (msg.userNameInUse) {
           setFeedback("<span style='color: red'> Username already in use. Try another name.</span>");
       }else if(msg.userNameTooLong){
@@ -384,35 +385,35 @@ $(function() {
 	  }
   });
   
-  socket.on('newroom', function(roomname){
+  commandSocket.on('newroom', function(roomname){
 	newRoom(roomname);
   });
   
-  socket.on('addcolor', function(color){
+  commandSocket.on('addcolor', function(color){
 	console.log("addcolor: " + color);
 	$('select#color').append($('<option></option>').val(color).html("<span style='color:" + color + "'>" + color + "</span>"));
   });
   
-  socket.on('balance', function(bal){
+  commandSocket.on('balance', function(bal){
 	balance = bal;
 	setBalance(balance);
   });
    
-  socket.on('tip', function(data){
+  commandSocket.on('tip', function(data){
 	var amount = data.amount;
 	balance = balance + amount;
 	setBalance(balance);
   });
   
-  socket.on('disconnect', function(){
+  commandSocket.on('disconnect', function(){
 	location.reload(true);
   });
   
-  socket.on('joinroom', function(data){
+  commandSocket.on('joinroom', function(data){
 	toggleRoom(data.room, data.topic);
   });
   
-  socket.on('modalert', function(data){
+  commandSocket.on('modalert', function(data){
 	console.log('modalert');
 	$('#room-' + data).addClass('btn-danger').removeClass('btn-default').removeClass('btn-warning');
 	pingSound();
@@ -489,7 +490,7 @@ $(function() {
 		room = stripHTML(room);
 		if(room != "") {
 			room = stripHTML(room);
-			socket.emit('addroom', room);
+			commandSocket.emit('addroom', room);
 		}
 		//toggleRoom(room);
 		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
@@ -502,7 +503,7 @@ $(function() {
 		e.stopped=true;
 		e.preventDefault();
 		if ($('input#buycolorinput').val() != "") {
-			socket.emit("buycolor", $('input#buycolorinput').val());
+			commandSocket.emit("buycolor", $('input#buycolorinput').val());
 		}
 		$('input#buycolorinput').val("");
 	}
@@ -510,7 +511,7 @@ $(function() {
   
   $('input#buycolor').click(function(e){
 	if ($('input#buycolorinput').val() != "") {
-		socket.emit("buycolor", $('input#buycolorinput').val());
+		commandSocket.emit("buycolor", $('input#buycolorinput').val());
 	}
 	$('input#buycolorinput').val("");
   });
@@ -520,7 +521,7 @@ $(function() {
 	$('input#newinput').val("");
 	if(room != "") {
 		room = stripHTML(room);
-		socket.emit('addroom', room);
+		commandSocket.emit('addroom', room);
 	}
   });
   

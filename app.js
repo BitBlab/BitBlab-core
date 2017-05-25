@@ -381,12 +381,13 @@ io.sockets.on('connection', function(socket) {
 
 nsPublic.on('connection', function(socket){
 	socket.on('message', function(msg) {
-		console.log(onlineUsers());
 		if(msg.message === undefined){
 			return;
 		}
 		
-	    var srcUser = getKeyByVal(clients, socket.id);
+	    var srcUser = getKeyByVal(clients, trimId(socket.id));
+
+	    console.log(trimId(socket.id) + ":" + srcUser);
 		
 		var curTime = new Date().getTime();
 		
@@ -423,10 +424,9 @@ nsPublic.on('connection', function(socket){
 					var bal = row.balance;
 					bal = bal + winnings;
 					db.run("UPDATE users SET balance = ? WHERE name = ?", [bal, srcUser]);
-					io.sockets.sockets[socket.id].emit('tip', {"amount": winnings, "type": "auto"});
+					io.sockets.sockets[trimId(socket.id)].emit('tip', {"amount": winnings, "type": "auto"}); //we DO need the weird socket thing here, do not change to just socket
 				});
 			});
-			//msg.message = msg.message + "<span class = 'label label-primary' style='float:right'>+" + winnings + "</span>";
 		}
 		
 		msg.message = addEmotes(msg.message);
@@ -1053,4 +1053,9 @@ function onlineUsers() {
 		}
 	}
 	return users;
+}
+
+function trimId(id)
+{
+	return id.substring(id.indexOf('#')+1);
 }
