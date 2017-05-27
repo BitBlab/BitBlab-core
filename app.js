@@ -231,7 +231,7 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('addroom', function(data){
 	if(data.name.indexOf(" ") != -1){
-		io.sockets.sockets[socket.id].emit('cli-error', "Rooms cannot contain spaces!");
+		socket.emit('cli-error', "Rooms cannot contain spaces!");
 		return;
 	}
 	db.serialize(function(){
@@ -250,6 +250,7 @@ io.sockets.on('connection', function(socket) {
 					userJoined(getKeyByVal(clients, socket.id), row.name);
 				}
 			}
+			nsPublic.connected[getNamespaceId(socket.id, "public")].join(data.name);
 		});
 	});
   });
@@ -380,6 +381,9 @@ io.sockets.on('connection', function(socket) {
 }); //end main namespace
 
 nsPublic.on('connection', function(socket){
+
+	console.log("pubnsid: " + socket.id);
+
 	socket.on('message', function(msg) {
 		if(msg.message === undefined){
 			return;
@@ -467,13 +471,14 @@ nsPublic.on('connection', function(socket){
 		}
 		
 		//broadcast
-		nsPublic.emit('message',
-		  {"source": srcUser,
-		   "message": msg.message,
-		   "target": msg.target,
-		   "type": msg.type,
-		   "tip": winnings
-		   });
+		nsPublic.to(msg.target)
+			.emit('message',
+			  {"source": srcUser,
+			   "message": msg.message,
+			   "target": msg.target,
+			   "type": msg.type,
+			   "tip": winnings
+			   });
   });
 }); //end nsPublic
  
@@ -1058,4 +1063,9 @@ function onlineUsers() {
 function trimId(id)
 {
 	return id.substring(id.indexOf('#')+1);
+}
+
+function getNamespaceId(id, namespace)
+{
+	return "/" + namespace + "#" + id
 }

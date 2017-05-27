@@ -490,10 +490,8 @@ $(function() {
 		room = stripHTML(room);
 		if(room != "") {
 			room = stripHTML(room);
-			commandSocket.emit('addroom', room);
+			addRoom(room);
 		}
-		//toggleRoom(room);
-		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
 	}
   });
   
