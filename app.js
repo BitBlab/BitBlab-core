@@ -28,9 +28,6 @@ var methodOverride = require('method-override');
 var serveStatic = require('serve-static');
 var errorHandler = require('errorhandler');
 
-//var routes = require('./routes');
-//var user = require('./routes/user');
-//var chat = require('./routes/chat');
 var socketio = require('socket.io');
 var http = require('http');
 var path = require('path');
@@ -96,10 +93,6 @@ app.use(serveStatic(path.join(__dirname, 'public')));
 if ('development' == app.get('env')) {
   app.use(errorHandler());
 }
-
-//app.get('/', chat.main);
-//app.get('/', routes.index);
-//app.get('/chat', chat.main);
 
 var server = app.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
@@ -283,7 +276,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
+										socket.emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -296,15 +289,15 @@ io.sockets.on('connection', function(socket) {
 									colors.push(color);
 									console.log(colors);
 									db.run("UPDATE colors SET colors = ? WHERE name = ?", [colors.toString(), user]);
-									io.sockets.sockets[socket.id].emit('addcolor', color);
-									io.sockets.sockets[socket.id].emit('balance', userBal-1);
+									socket.emit('addcolor', color);
+									socket.emit('balance', userBal-1);
 									userColors[user] = userColors[user] + "," + color;
 								}
 							}else{
 								db.run("UPDATE users SET balance = ? WHERE name = ?", [userBal-1, user]);
 								db.run("INSERT INTO colors VALUES (?, ?, ?)", [user, ["black", color,].toString(), ["black"].toString()]);
-								io.sockets.sockets[socket.id].emit('addcolor', color);
-								io.sockets.sockets[socket.id].emit('balance', userBal-1);
+								socket.emit('addcolor', color);
+								socket.emit('balance', userBal-1);
 								userColors[user] = userColors[user] + "," + color;
 							}
 						});
@@ -324,7 +317,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
+										socket.emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -337,15 +330,15 @@ io.sockets.on('connection', function(socket) {
 									colors.push(color);
 									console.log(colors);
 									db.run("UPDATE colors SET colors = ? WHERE name = ?", [colors.toString(), user]);
-									io.sockets.sockets[socket.id].emit('addcolor', color);
-									io.sockets.sockets[socket.id].emit('balance', userBal-1);
+									socket.emit('addcolor', color);
+									socket.emit('balance', userBal-1);
 									userColors[user] = userColors[user] + "," + color;
 								}
 							}else{
 								db.run("UPDATE users SET balance = ? WHERE name = ?", [userBal-1, user]);
 								db.run("INSERT INTO colors VALUES (?, ?, ?)", [user, ["black", color,].toString(), ["black"].toString()]);
-								io.sockets.sockets[socket.id].emit('addcolor', color);
-								io.sockets.sockets[socket.id].emit('balance', userBal-1);
+								socket.emit('addcolor', color);
+								socket.emit('balance', userBal-1);
 								userColors[user] = userColors[user] + "," + color;
 							}
 						});
@@ -364,7 +357,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('list', function(data){
-	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers()));
+	socket.emit('list', JSON.stringify(onlineUsers()));
   });
   
   socket.on('disconnect', function() {
@@ -470,7 +463,7 @@ nsPublic.on('connection', function(socket){
 			}
 		}
 		
-		//broadcast
+		//broadcast to the room
 		nsPublic.to(msg.target)
 			.emit('message',
 			  {"source": srcUser,
@@ -805,7 +798,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance + amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal);
+							io.sockets.sockets[socket.id].emit('balance', newbal); //does not target the right user - fix
 						}
 					});
 				});
@@ -817,7 +810,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance - amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal);
+							io.sockets.sockets[socket.id].emit('balance', newbal);//does not target the right user - fix
 						}
 					});
 				});
@@ -826,7 +819,7 @@ function runCommand(socket, msg, words, srcUser)
 			else if(action == "set"){
 				db.serialize(function(){
 					db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
-					io.sockets.sockets[socket.id].emit('balance', amount);
+					io.sockets.sockets[socket.id].emit('balance', amount);//does not target the right user - fix
 				});
 			}
 
@@ -893,7 +886,7 @@ function runCommand(socket, msg, words, srcUser)
 					if(row != undefined){
 						if(row.owner == srcUser || uLvl >= 3){
 							db.run("UPDATE rooms SET topic = ? WHERE name = ?", [topic, targetRoom]);
-							io.sockets.sockets[socket.id].emit('message',
+							socket.emit('message',
 															{"source": "[System]",
 															"message": "<span class='label label-success'>Topic set!</span>",
 															"target": msg.target,
@@ -901,7 +894,7 @@ function runCommand(socket, msg, words, srcUser)
 															"tip": 0
 															});
 						}else{
-							io.sockets.sockets[socket.id].emit('message',
+							socket.emit('message',
 															{"source": "[System]",
 															"message": "<span class='label label-danger'>You don't have permission to do that!</span>",
 															"target": msg.target,

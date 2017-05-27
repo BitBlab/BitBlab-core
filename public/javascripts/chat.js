@@ -44,8 +44,6 @@ var clientID;
 
 var easterEggSound = false;
 
-//var pingSound = new Audio("/sounds/ping.mp3");
-
 var host = window.location.hostname.split(":")[0]
 
 function enableMsgInput(enable) {
@@ -105,7 +103,6 @@ function appendNewMessage(msg) {
 function appendNewUser(data, notify) {
   var user = data.name;
   var room = data.room;
-  //$('select#users').append($('<option></option>').val(uName).html(uName));
   if (notify){
 	if(currentRoom == room){
 		$('#msgWindow').append("<tr><td class='userSpan'>[System]</td><td class='sysMsg'>" + user + " just joined!</td></tr><br/>");
@@ -119,7 +116,6 @@ function appendNewUser(data, notify) {
 }
  
 function handleUserLeft(msg) {
-    //$("select#users option[value='" + msg.userName + "']").remove();
 	//this will do something soon
 	console.log(msg);
 	return;
@@ -146,32 +142,20 @@ function setUsername() {
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
 	}
 	
-	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
-	
 	myUserName=stripHTML(myUserName);
     commandSocket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
-	//addRoom("Main");
-	//roomList["Main"] = true;
-	//currentRoom = "Main";
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 }
 
 function login(){
 	myUserName = $('input#userName').val();
 	var pass = $('input#password').val();
 	
-	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
-	
 	commandSocket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
 	console.log('Attempting to login');
-	//currentRoom = "Main";
-	//roomList["Main"] = true;
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 }
  
 function sendMessage() {
-    //var trgt = $('select#users').val();
 	var trgt = currentRoom;
 	var type;
 	var msg = $('input#msg').val();
@@ -180,8 +164,6 @@ function sendMessage() {
 		color = "#000000";
 	}
 	
-	//msg=stripHTML(msg);
-	
 	msg = replaceEmotes(msg);
 	
 	if(stripHTML(msg).length < 2){
@@ -189,15 +171,8 @@ function sendMessage() {
 		return;
 	}
 	
-	if(msg == "Ding dong, the psycho's gone."){
+	/*if(msg == "Ding dong, the psycho's gone."){
 		easterEggSound = !easterEggSound;
-	}
-	
-	/*if(trgt.charAt(1) == ":"){
-		type = "room";
-		trgt = trgt.substring(2);
-	}else{
-		type = "priv";
 	}*/
 	
 	sentMessages.push(msg);
@@ -229,7 +204,6 @@ function setRooms(rooms){
 	//$('#roomWindow >a').remove();
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;
-		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + rooms[i] + quote + ");'>" + rooms[i] + "</a><br />");
 	}
 	$('#roomWindow').append("<a id='room-Main' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 	roomList["Main"] = true;
@@ -281,7 +255,6 @@ function newRoom(roomname){
 	if(!roomList[roomname]){
 		roomList[roomname] = false;
 	}
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + roomname + quote + ");'>" + roomname + "</a><br />");
 }
 
 function pmUser(user, msg){
@@ -325,11 +298,11 @@ function replaceEmotes(str){
 }
 
 function pingSound(){
-	if(easterEggSound){
-		document.getElementById('dingdongSound').play();
-	}else{
+	//if(easterEggSound){
+	//	document.getElementById('dingdongSound').play();
+	//}else{
 		document.getElementById('pingSound').play();
-	}
+	//}
 }
 
 function addRoom(room){ //public rooms ONLY
@@ -522,6 +495,4 @@ $(function() {
 		addRoom(room);
 	}
   });
-  
-  
 });
