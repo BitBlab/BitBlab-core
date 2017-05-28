@@ -28,9 +28,6 @@ var methodOverride = require('method-override');
 var serveStatic = require('serve-static');
 var errorHandler = require('errorhandler');
 
-//var routes = require('./routes');
-//var user = require('./routes/user');
-//var chat = require('./routes/chat');
 var socketio = require('socket.io');
 var http = require('http');
 var path = require('path');
@@ -97,10 +94,6 @@ if ('development' == app.get('env')) {
   app.use(errorHandler());
 }
 
-//app.get('/', chat.main);
-//app.get('/', routes.index);
-//app.get('/chat', chat.main);
-
 var server = app.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
@@ -109,6 +102,11 @@ var server = app.listen(app.get('port'), function(){
 var io = socketio.listen(server);
 var clients = {};
 //var onlineUsers = [];
+
+// define socket.io namespaces for different room types
+var nsCommand = io.of('/'); //used for some functions, probably
+var nsPublic = io.of('/public');
+var nsPrivate = io.of('/private');
 
 setInterval(function(){
 	io.sockets.emit('advert', advertisements[adNum]);
@@ -218,123 +216,6 @@ io.sockets.on('connection', function(socket) {
 	});
   });
   
-  socket.on('message', function(msg) {
-	console.log(onlineUsers());
-	if(msg.message === undefined){
-		return;
-	}
-	
-    var srcUser = getKeyByVal(clients, socket.id);
-	
-	if(srcUser === undefined) {
-		//improve error logging later (like that'll happen)
-		return;
-	}
-	
-	var curTime = new Date().getTime();
-	
-	db.serialize(function() {
-		db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
-	});
-	
-	if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
-		io.sockets.sockets[socket.id].emit('message',
-				{"source": "[System]",
-				"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
-				"target": msg.target,
-				"type": msg.type,
-				"tip": 0
-				});
-		userMsgTime[srcUser] = curTime;
-		return;
-	} else{
-		userMsgTime[srcUser] = curTime;
-	}
-	
-	var words = msg.message.split(" ");
-
-	if(msg.message.startsWith("/"))
-	{
-		runCommand(socket, msg, words, srcUser);
-		return;
-	}
-
-	var winnings = checkReward(msg.message, userType[srcUser]);
-	if(winnings > 0){
-		db.serialize(function(){
-			db.get("SELECT balance FROM users WHERE name = ?", srcUser, function(err, row){
-				var bal = row.balance;
-				bal = bal + winnings;
-				db.run("UPDATE users SET balance = ? WHERE name = ?", [bal, srcUser]);
-				io.sockets.sockets[socket.id].emit('tip', {"amount": winnings, "type": "auto"});
-			});
-		});
-		//msg.message = msg.message + "<span class = 'label label-primary' style='float:right'>+" + winnings + "</span>";
-	}
-	
-	msg.message = addEmotes(msg.message);
-	
-	for(var i = 0; i < words.length; i++) {
-        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
-		    if(userType[srcUser] >= 1){
-		        console.log("Link detected");
-                var url = words[i];
-                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
-			}else{
-			    words[i] = "[Warning: links may contain malware]" + words[i];
-			}
-        }else if(words[i].indexOf("#", 0) == 0){
-			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
-		}
-    }
-	
-	msg.message = words.join(" ");
-	
-	if(typeof msg.color != "undefined"){
-		var owned = userColors[srcUser].split(",");
-		var authed = false;
-		
-		for(var i=0; i < owned.length; i++){
-			if(owned[i] == msg.color){
-				authed = true;
-				break;
-			}
-		}
-		if(authed){
-			if(msg.color == "rainbow"){
-				msg.message = rainbow(msg.message);
-			}else{
-				msg.message = "<span style='color:" + msg.color + "'>" + msg.message + "</span>";
-			}
-		}
-	}
-	
-    if (msg.type == "room") {
-      // broadcast
-		io.sockets.emit('message',
-		  {"source": srcUser,
-		   "message": msg.message,
-		   "target": msg.target,
-		   "type": msg.type,
-		   "tip": winnings
-		   });
-    } else if(msg.type == "priv"){
-	if(msg.target.indexOf("PM:") == -1){
-		msg.target = "PM:" + msg.target;
-	}
-	io.sockets.sockets[socket.id].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
-	io.sockets.sockets[clients[msg.target.substring(3)]].emit('joinroom', {"room": msg.target, "topic":"Private Message"});
-      // Look up the socket id
-	io.sockets.sockets[clients[msg.target.substring(3)]].emit('message',
-	  {"source": srcUser,
-	   "message": msg.message,
-	   "target": msg.target,
-	   "type": msg.type,
-	   "tip": winnings
-	   });
-    }
-  })
-  
   socket.on('command', function(data){
 
   	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
@@ -342,22 +223,27 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('addroom', function(data){
-	if(data.indexOf(" ") != -1){
-		io.sockets.sockets[socket.id].emit('cli-error', "Rooms cannot contain spaces!");
+	if(data.name.indexOf(" ") != -1){
+		socket.emit('cli-error', "Rooms cannot contain spaces!");
 		return;
 	}
 	db.serialize(function(){
-		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data, function(err, row){
+		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data, clients[getKeyByVal(clients, socket.id)], "", false, "", ""]);
+				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, clients[getKeyByVal(clients, socket.id)], "", data.type, "", ""]);
 				rooms.push(data);
-				io.sockets.emit('newroom', data);
-				socket.emit('joinroom', {"room":data, "topic": ""});
+				if(data.type == 0)
+					io.sockets.emit('newroom', data);
+				socket.emit('joinroom', {"type":data.type,"room":data.name, "topic": ""});
 				userJoined(getKeyByVal(clients, socket.id), data);
 			}else{
-				socket.emit('joinroom', {"room": row.name, "topic": row.topic});
-				userJoined(getKeyByVal(clients, socket.id), row.name);
+				if(row.type == 0)
+				{
+					socket.emit('joinroom', {"room": row.name, "topic": row.topic});
+					userJoined(getKeyByVal(clients, socket.id), row.name);
+				}
 			}
+			nsPublic.connected[getNamespaceId(socket.id, "public")].join(data.name);
 		});
 	});
   });
@@ -390,7 +276,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
+										socket.emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -403,15 +289,15 @@ io.sockets.on('connection', function(socket) {
 									colors.push(color);
 									console.log(colors);
 									db.run("UPDATE colors SET colors = ? WHERE name = ?", [colors.toString(), user]);
-									io.sockets.sockets[socket.id].emit('addcolor', color);
-									io.sockets.sockets[socket.id].emit('balance', userBal-1);
+									socket.emit('addcolor', color);
+									socket.emit('balance', userBal-1);
 									userColors[user] = userColors[user] + "," + color;
 								}
 							}else{
 								db.run("UPDATE users SET balance = ? WHERE name = ?", [userBal-1, user]);
 								db.run("INSERT INTO colors VALUES (?, ?, ?)", [user, ["black", color,].toString(), ["black"].toString()]);
-								io.sockets.sockets[socket.id].emit('addcolor', color);
-								io.sockets.sockets[socket.id].emit('balance', userBal-1);
+								socket.emit('addcolor', color);
+								socket.emit('balance', userBal-1);
 								userColors[user] = userColors[user] + "," + color;
 							}
 						});
@@ -431,7 +317,7 @@ io.sockets.on('connection', function(socket) {
 								for (var i=0; i < colors.length;i++){
 									console.log(i + "/" + colors.length);
 									if(color === colors[i]){
-										io.sockets.sockets[socket.id].emit('cli-error', 'colErr');
+										socket.emit('cli-error', 'colErr');
 										inArr = true;
 										break;
 									}
@@ -444,15 +330,15 @@ io.sockets.on('connection', function(socket) {
 									colors.push(color);
 									console.log(colors);
 									db.run("UPDATE colors SET colors = ? WHERE name = ?", [colors.toString(), user]);
-									io.sockets.sockets[socket.id].emit('addcolor', color);
-									io.sockets.sockets[socket.id].emit('balance', userBal-1);
+									socket.emit('addcolor', color);
+									socket.emit('balance', userBal-1);
 									userColors[user] = userColors[user] + "," + color;
 								}
 							}else{
 								db.run("UPDATE users SET balance = ? WHERE name = ?", [userBal-1, user]);
 								db.run("INSERT INTO colors VALUES (?, ?, ?)", [user, ["black", color,].toString(), ["black"].toString()]);
-								io.sockets.sockets[socket.id].emit('addcolor', color);
-								io.sockets.sockets[socket.id].emit('balance', userBal-1);
+								socket.emit('addcolor', color);
+								socket.emit('balance', userBal-1);
 								userColors[user] = userColors[user] + "," + color;
 							}
 						});
@@ -471,7 +357,7 @@ io.sockets.on('connection', function(socket) {
   });
   
   socket.on('list', function(data){
-	io.sockets.sockets[socket.id].emit('list', JSON.stringify(onlineUsers()));
+	socket.emit('list', JSON.stringify(onlineUsers()));
   });
   
   socket.on('disconnect', function() {
@@ -484,8 +370,115 @@ io.sockets.on('connection', function(socket) {
     // relay this message to all the clients
  
     userLeft(uName);
-  })
-})
+  });
+}); //end main namespace
+
+nsPublic.on('connection', function(socket){
+
+	console.log("pubnsid: " + socket.id);
+
+	socket.on('message', function(msg) {
+		if(msg.message === undefined){
+			return;
+		}
+		
+	    var srcUser = getKeyByVal(clients, trimId(socket.id));
+	    
+	    if(srcUser === undefined) {
+		    //improve error logging later (like that'll happen)
+		    return;
+	    }
+
+	    console.log(trimId(socket.id) + ":" + srcUser);
+		
+		var curTime = new Date().getTime();
+		
+		db.serialize(function() {
+			db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
+		});
+		
+		if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
+			socket.emit('message',
+					{"source": "[System]",
+					"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
+					"target": msg.target,
+					"type": msg.type,
+					"tip": 0
+					});
+			userMsgTime[srcUser] = curTime;
+			return;
+		} else{
+			userMsgTime[srcUser] = curTime;
+		}
+		
+		var words = msg.message.split(" ");
+
+		if(msg.message.startsWith("/"))
+		{
+			runCommand(socket, msg, words, srcUser);
+			return;
+		}
+
+		var winnings = checkReward(msg.message, userType[srcUser]);
+		if(winnings > 0){
+			db.serialize(function(){
+				db.get("SELECT balance FROM users WHERE name = ?", srcUser, function(err, row){
+					var bal = row.balance;
+					bal = bal + winnings;
+					db.run("UPDATE users SET balance = ? WHERE name = ?", [bal, srcUser]);
+					io.sockets.sockets[trimId(socket.id)].emit('tip', {"amount": winnings, "type": "auto"}); //we DO need the weird socket thing here, do not change to just socket
+				});
+			});
+		}
+		
+		msg.message = addEmotes(msg.message);
+		
+		for(var i = 0; i < words.length; i++) {
+	        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
+			    if(userType[srcUser] >= 1){
+			        console.log("Link detected");
+	                var url = words[i];
+	                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
+				}else{
+				    words[i] = "[Warning: links may contain malware]" + words[i];
+				}
+	        }else if(words[i].indexOf("#", 0) == 0){
+				words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+			}
+	    }
+		
+		msg.message = words.join(" ");
+		
+		if(typeof msg.color != "undefined"){
+			var owned = userColors[srcUser].split(",");
+			var authed = false;
+			
+			for(var i=0; i < owned.length; i++){
+				if(owned[i] == msg.color){
+					authed = true;
+					break;
+				}
+			}
+			if(authed){
+				if(msg.color == "rainbow"){
+					msg.message = rainbow(msg.message);
+				}else{
+					msg.message = "<span style='color:" + msg.color + "'>" + msg.message + "</span>";
+				}
+			}
+		}
+		
+		//broadcast to the room
+		nsPublic.to(msg.target)
+			.emit('message',
+			  {"source": srcUser,
+			   "message": msg.message,
+			   "target": msg.target,
+			   "type": msg.type,
+			   "tip": winnings
+			   });
+  });
+}); //end nsPublic
  
 function tipUser(user, target, amount, socket, room, message){
 
@@ -811,7 +804,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance + amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal);
+							io.sockets.sockets[socket.id].emit('balance', newbal); //does not target the right user - fix
 						}
 					});
 				});
@@ -823,7 +816,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance - amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal);
+							io.sockets.sockets[socket.id].emit('balance', newbal);//does not target the right user - fix
 						}
 					});
 				});
@@ -832,7 +825,7 @@ function runCommand(socket, msg, words, srcUser)
 			else if(action == "set"){
 				db.serialize(function(){
 					db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
-					io.sockets.sockets[socket.id].emit('balance', amount);
+					io.sockets.sockets[socket.id].emit('balance', amount);//does not target the right user - fix
 				});
 			}
 
@@ -899,7 +892,7 @@ function runCommand(socket, msg, words, srcUser)
 					if(row != undefined){
 						if(row.owner == srcUser || uLvl >= 3){
 							db.run("UPDATE rooms SET topic = ? WHERE name = ?", [topic, targetRoom]);
-							io.sockets.sockets[socket.id].emit('message',
+							socket.emit('message',
 															{"source": "[System]",
 															"message": "<span class='label label-success'>Topic set!</span>",
 															"target": msg.target,
@@ -907,7 +900,7 @@ function runCommand(socket, msg, words, srcUser)
 															"tip": 0
 															});
 						}else{
-							io.sockets.sockets[socket.id].emit('message',
+							socket.emit('message',
 															{"source": "[System]",
 															"message": "<span class='label label-danger'>You don't have permission to do that!</span>",
 															"target": msg.target,
@@ -1064,4 +1057,14 @@ function onlineUsers() {
 		}
 	}
 	return users;
+}
+
+function trimId(id)
+{
+	return id.substring(id.indexOf('#')+1);
+}
+
+function getNamespaceId(id, namespace)
+{
+	return "/" + namespace + "#" + id
 }

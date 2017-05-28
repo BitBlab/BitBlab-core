@@ -16,7 +16,9 @@
    
 */
 
-var socket;
+var commandSocket;
+var publicSocket;
+
 var myUserName;
 
 var emoteCodes = [":happy:", ":sad:", ":mad:", ":cool:", ":XD:", ":gasp:", ":speechless:", ":tongue:", ":up:", ":down:", ":grin:"];
@@ -42,8 +44,6 @@ var currentExchange = {};
 var clientID;
 
 var easterEggSound = false;
-
-//var pingSound = new Audio("/sounds/ping.mp3");
 
 var host = window.location.hostname.split(":")[0]
 
@@ -104,7 +104,6 @@ function appendNewMessage(msg) {
 function appendNewUser(data, notify) {
   var user = data.name;
   var room = data.room;
-  //$('select#users').append($('<option></option>').val(uName).html(uName));
   if (notify){
 	if(currentRoom == room){
 		$('#msgWindow').append("<tr><td class='userSpan'>[System]</td><td class='sysMsg'>" + user + " just joined!</td></tr><br/>");
@@ -118,16 +117,14 @@ function appendNewUser(data, notify) {
 }
  
 function handleUserLeft(msg) {
-    //$("select#users option[value='" + msg.userName + "']").remove();
 	//this will do something soon
 	console.log(msg);
 	return;
 }
  
 
-socket = io.connect("http://" + host + ":3000"); //personal internal testing (AHuman)
-//socket = io.connect("http://chat.bitblab.net:3000"); //NEW external release
-//socket = io.connect("http://localhost:3000"); //internal testing on local machine
+commandSocket = io.connect("http://" + host + ":3000");
+publicSocket = io.connect("http://" + host + ":3000/public");
 
 function setFeedback(fb) {
   $('span#feedback').html(fb);
@@ -146,31 +143,20 @@ function setUsername() {
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
 	}
 	
-	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
-	
 	myUserName=stripHTML(myUserName);
-    socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
+    commandSocket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
-	//roomList["Main"] = true;
-	//currentRoom = "Main";
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 }
 
 function login(){
 	myUserName = $('input#userName').val();
 	var pass = $('input#password').val();
 	
-	//pass = CryptoJS.AES.encrypt(pass, clientID).toString(); USE SSL
-	
-	socket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
+	commandSocket.emit('login', {"user": myUserName, "pass": pass, "aes": true});
 	console.log('Attempting to login');
-	//currentRoom = "Main";
-	//roomList["Main"] = true;
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 }
  
 function sendMessage() {
-    //var trgt = $('select#users').val();
 	var trgt = currentRoom;
 	var type;
 	var msg = $('input#msg').val();
@@ -179,8 +165,6 @@ function sendMessage() {
 		color = "#000000";
 	}
 	
-	//msg=stripHTML(msg);
-	
 	msg = replaceEmotes(msg);
 	
 	if(stripHTML(msg).length < 2){
@@ -188,15 +172,8 @@ function sendMessage() {
 		return;
 	}
 	
-	if(msg == "Ding dong, the psycho's gone."){
+	/*if(msg == "Ding dong, the psycho's gone."){
 		easterEggSound = !easterEggSound;
-	}
-	
-	/*if(trgt.charAt(1) == ":"){
-		type = "room";
-		trgt = trgt.substring(2);
-	}else{
-		type = "priv";
 	}*/
 	
 	sentMessages.push(msg);
@@ -206,7 +183,7 @@ function sendMessage() {
 		pmUser(trgt.substring(3), msg);
 		return;
 	}else{
-		socket.emit('message',
+		publicSocket.emit('message',
                 {
                   "message": msg,
 				  "color": color,
@@ -228,7 +205,6 @@ function setRooms(rooms){
 	//$('#roomWindow >a').remove();
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;
-		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + rooms[i] + quote + ");'>" + rooms[i] + "</a><br />");
 	}
 	$('#roomWindow').append("<a id='room-Main' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
 	roomList["Main"] = true;
@@ -280,7 +256,6 @@ function newRoom(roomname){
 	if(!roomList[roomname]){
 		roomList[roomname] = false;
 	}
-	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + roomname + quote + ");'>" + roomname + "</a><br />");
 }
 
 function pmUser(user, msg){
@@ -288,7 +263,7 @@ function pmUser(user, msg){
 	if(color == "" || color === undefined){
 		color = "#000000";
 	}
-	socket.emit('message',
+	publicSocket.emit('message',
                 {
                   "message": msg,
 				  "color": color,
@@ -324,15 +299,15 @@ function replaceEmotes(str){
 }
 
 function pingSound(){
-	if(easterEggSound){
-		document.getElementById('dingdongSound').play();
-	}else{
+	//if(easterEggSound){
+	//	document.getElementById('dingdongSound').play();
+	//}else{
 		document.getElementById('pingSound').play();
-	}
+	//}
 }
 
-function addRoom(room){
-	socket.emit('addroom', room);
+function addRoom(room){ //public rooms ONLY
+	commandSocket.emit('addroom', {"name":room, "type":0});
 }
 function updateExchangeRate() {
 	$.getJSON("http://api.coindesk.com/v1/bpi/currentprice.json", function(result) {
@@ -363,23 +338,23 @@ $(function() {
   enableMsgInput(false);
  
  
-  socket.on('id', function(id){
+  commandSocket.on('id', function(id){
 	clientID = id;
 	console.log(id);
   });
-  socket.on('userJoined', function(msg) {
+  commandSocket.on('userJoined', function(msg) {
     appendNewUser(msg, true);
   });
    
-  socket.on('userLeft', function(msg) {
+  commandSocket.on('userLeft', function(msg) {
     handleUserLeft(msg);
   });
  
-  socket.on('message', function(msg) {
+  publicSocket.on('message', function(msg) {
     appendNewMessage(msg);
   });
  
-  socket.on('welcome', function(msg) {
+  commandSocket.on('welcome', function(msg) {
     setFeedback("<span style='color: green'> " + msg.message + "</span>");
     setCurrentUsers(msg.currentUsers);
 	setRooms(msg.rooms);
@@ -395,7 +370,7 @@ $(function() {
 	
   });
  
-  socket.on('cli-error', function(msg) {
+  commandSocket.on('cli-error', function(msg) {
       if (msg.userNameInUse) {
           setFeedback("<span style='color: red'> Username already in use. Try another name.</span>");
       }else if(msg.userNameTooLong){
@@ -409,35 +384,35 @@ $(function() {
 	  }
   });
   
-  socket.on('newroom', function(roomname){
+  commandSocket.on('newroom', function(roomname){
 	newRoom(roomname);
   });
   
-  socket.on('addcolor', function(color){
+  commandSocket.on('addcolor', function(color){
 	console.log("addcolor: " + color);
 	$('select#color').append($('<option></option>').val(color).html("<span style='color:" + color + "'>" + color + "</span>"));
   });
   
-  socket.on('balance', function(bal){
+  commandSocket.on('balance', function(bal){
 	balance = bal;
 	setBalance(balance);
   });
    
-  socket.on('tip', function(data){
+  commandSocket.on('tip', function(data){
 	var amount = data.amount;
 	balance = balance + amount;
 	setBalance(balance);
   });
   
-  socket.on('disconnect', function(){
+  commandSocket.on('disconnect', function(){
 	location.reload(true);
   });
   
-  socket.on('joinroom', function(data){
+  commandSocket.on('joinroom', function(data){
 	toggleRoom(data.room, data.topic);
   });
   
-  socket.on('modalert', function(data){
+  commandSocket.on('modalert', function(data){
 	console.log('modalert');
 	$('#room-' + data).addClass('btn-danger').removeClass('btn-default').removeClass('btn-warning');
 	pingSound();
@@ -514,10 +489,8 @@ $(function() {
 		room = stripHTML(room);
 		if(room != "") {
 			room = stripHTML(room);
-			socket.emit('addroom', room);
+			addRoom(room);
 		}
-		//toggleRoom(room);
-		//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
 	}
   });
   
@@ -527,7 +500,7 @@ $(function() {
 		e.stopped=true;
 		e.preventDefault();
 		if ($('input#buycolorinput').val() != "") {
-			socket.emit("buycolor", $('input#buycolorinput').val());
+			commandSocket.emit("buycolor", $('input#buycolorinput').val());
 		}
 		$('input#buycolorinput').val("");
 	}
@@ -535,7 +508,7 @@ $(function() {
   
   $('input#buycolor').click(function(e){
 	if ($('input#buycolorinput').val() != "") {
-		socket.emit("buycolor", $('input#buycolorinput').val());
+		commandSocket.emit("buycolor", $('input#buycolorinput').val());
 	}
 	$('input#buycolorinput').val("");
   });
@@ -545,9 +518,7 @@ $(function() {
 	$('input#newinput').val("");
 	if(room != "") {
 		room = stripHTML(room);
-		socket.emit('addroom', room);
+		addRoom(room);
 	}
   });
-  
-  
 });
