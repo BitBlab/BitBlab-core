@@ -226,6 +226,11 @@ io.sockets.on('connection', function(socket) {
 	
     var srcUser = getKeyByVal(clients, socket.id);
 	
+	if(srcUser === undefined) {
+		//improve error logging later (like that'll happen)
+		return;
+	}
+	
 	var curTime = new Date().getTime();
 	
 	db.serialize(function() {
@@ -537,6 +542,7 @@ function tipUser(user, target, amount, socket, room, message){
 } 
 
 function userJoined(uName, room) {
+	console.log(clients);
     Object.values(clients).forEach(function(sId) {
 	  console.log(uName);
       io.sockets.sockets[sId].emit('userJoined', { "name": uName, "room": room });

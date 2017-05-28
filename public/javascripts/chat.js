@@ -37,6 +37,7 @@ var quote = '"'; //used for creating <a> tags with certain javascript functions 
 var colors = []; //available user colors [unused right now]
 
 var balance = 0;
+var currentExchange = {};
 
 var clientID;
 
@@ -150,7 +151,6 @@ function setUsername() {
 	myUserName=stripHTML(myUserName);
     socket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
-	addRoom("Main");
 	//roomList["Main"] = true;
 	//currentRoom = "Main";
 	//$('#roomWindow').append("<a href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
@@ -334,6 +334,30 @@ function pingSound(){
 function addRoom(room){
 	socket.emit('addroom', room);
 }
+function updateExchangeRate() {
+	$.getJSON("http://api.coindesk.com/v1/bpi/currentprice.json", function(result) {
+		currentExchange = result;
+	});
+}
+setInterval(updateExchangeRate, 60000);
+
+function getExchangeRate(currency, BtoC, input) {
+	if(BtoC) { //If its going Bitcoin to the Currency
+		return parseFloat(currentExchange["bpi"][currency]["rate"].replace(",", ""))*input;
+	} else { //Its going Currency to the Bitcoin
+		return parseFloat(currentExchange["bpi"][currency]["rate"].replace(",", ""))/input;
+	}
+}
+
+/*function getExchangeRate(currency, BtoC, input) {
+	dont_care = $.getJSON("http://api.coindesk.com/v1/bpi/currentprice.json", function(result){
+		if(BtoC) { //If its going Bitcoin to the Currency
+			return parseFloat(result["bpi"][currency]["rate"])*input;
+		} else { //Its going Currency to the Bitcoin
+			return parseFloat(result["bpi"][currency]["rate"])/input;
+		}
+    });
+}*/
 
 $(function() {
   enableMsgInput(false);
@@ -365,6 +389,7 @@ $(function() {
 	addRoom("Main");
 	balance = msg.balance;
 	setBalance(balance);
+	updateExchangeRate()
 	
 	document.getElementById("loginform").remove();
 	
