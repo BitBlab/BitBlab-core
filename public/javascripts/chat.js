@@ -521,4 +521,11 @@ $(function() {
 		addRoom(room);
 	}
   });
+
+  $('#sendmsg').click(function(e){
+  	sendMessage();
+	e.stopPropagation();
+	e.stopped = true;
+	e.preventDefault();
+  });
 });
