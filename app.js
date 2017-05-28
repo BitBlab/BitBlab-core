@@ -804,7 +804,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance + amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal); //does not target the right user - fix
+							io.sockets.sockets[clients[targetUser]].emit('balance', newbal); //does not target the right user - fix
 						}
 					});
 				});
@@ -816,7 +816,7 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance - amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[socket.id].emit('balance', newbal);//does not target the right user - fix
+							io.sockets.sockets[clients[targetUser]].emit('balance', newbal);//does not target the right user - fix
 						}
 					});
 				});
@@ -825,7 +825,7 @@ function runCommand(socket, msg, words, srcUser)
 			else if(action == "set"){
 				db.serialize(function(){
 					db.run("UPDATE users SET balance = ? WHERE name = ?", [amount, targetUser]);
-					io.sockets.sockets[socket.id].emit('balance', amount);//does not target the right user - fix
+					io.sockets.sockets[clients[targetUser]].emit('balance', amount); //does not target the right user - fix
 				});
 			}
 
