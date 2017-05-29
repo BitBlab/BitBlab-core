@@ -944,6 +944,11 @@ function runCommand(socket, msg, words, srcUser)
 			//TODO
 			break;
 		
+		case 'dumplog':
+			var curTime = new Date().getTime();
+			dumpChatLog(msg.target, curTime - 5*60*1000, curTime);
+			break;
+
 		default:
 			sendInlineError(socket, "Invalid command: " + words[0], msg.target, msg.type);
 			break;
@@ -1067,4 +1072,29 @@ function trimId(id)
 function getNamespaceId(id, namespace)
 {
 	return "/" + namespace + "#" + id
+}
+
+function dumpChatLog(room, startTime, endTime)
+{
+	var logData = "";
+	var fileName = "logs/" + startTime + "-" + endTime + "~" + room + ".log";
+
+	if (!fs.existsSync("logs")){
+	    fs.mkdirSync("logs");
+	}
+
+	db.serialize(function(){
+		db.each("SELECT * from messages WHERE room = ? AND timestamp >= ? AND timestamp <= ?", room, startTime, endTime, function(err, row){
+			if(row !== undefined)
+				logData += row.timestamp + ": " + row.name + " - " + row.message + "\n";
+		}, function(err, num){
+			console.log(logData);
+
+			fs.writeFile(fileName, logData, function(err){
+				if(err) console.log("Failed to dump log \"" + fileName + "\"!");
+			});
+		});
+	});
+
+	return fileName;
 }
