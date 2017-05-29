@@ -136,15 +136,17 @@ function setBalance(bal) {
 }
  
 function setUsername() {
-    myUserName = $('input#userName').val();
-	var pass = $('input#password').val();
+	console.log('setUsername');
+    myUserName = $('input#registerUsername').val();
+	pass = $('input#registerPassword').val();
+	email = $('input#registerEmail').val();
 	
 	if(pass.length < 6){
 		setFeedback("<span style='color: red'> Password must be at least 6 characters long!</span>");
 	}
 	
 	myUserName=stripHTML(myUserName);
-    commandSocket.emit('register', {"user": myUserName, "pass": pass, "aes": true}, function(data) { console.log('emit set username', data); });
+    commandSocket.emit('register', {"user": myUserName, "pass": pass, "email":email}, function(data) { console.log('emit set username', data); });
     console.log('Set user name as ' + myUserName);
 }
 
@@ -324,15 +326,7 @@ function getExchangeRate(currency, BtoC, input) {
 	}
 }
 
-/*function getExchangeRate(currency, BtoC, input) {
-	dont_care = $.getJSON("http://api.coindesk.com/v1/bpi/currentprice.json", function(result){
-		if(BtoC) { //If its going Bitcoin to the Currency
-			return parseFloat(result["bpi"][currency]["rate"])*input;
-		} else { //Its going Currency to the Bitcoin
-			return parseFloat(result["bpi"][currency]["rate"])/input;
-		}
-    });
-}*/
+
 
 $(function() {
   enableMsgInput(false);
@@ -420,7 +414,17 @@ $(function() {
   });
   
   $('input#register').click(function(e){
-	setUsername();
+		document.getElementById("registerUsername").value = document.getElementById("userName").value;
+		document.getElementById("registerPassword").value = document.getElementById("password").value;
+	    $('#settings').modal('toggle');
+  });
+  
+  $('#formRegister').on('submit', function(e) {
+	e.preventDefault();
+	console.log("Registering!");
+    setUsername();
+	$('#settings').modal('toggle');
+    return false;
   });
   
   $('input#login').click(function(e){

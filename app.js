@@ -48,7 +48,7 @@ var db = new sqlite.Database(file);
 
 db.serialize(function(){
 	if(!dbexists){
-		db.run("CREATE TABLE users (name TEXT, pass TEXT, type INTGER, status INTEGER, balance REAL)");
+		db.run("CREATE TABLE users (name TEXT, pass TEXT, email TEXT, type INTGER, status INTEGER, balance REAL)");
 		db.run("CREATE TABLE rooms (name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
@@ -128,6 +128,7 @@ io.sockets.on('connection', function(socket) {
 	
 	var userName = data.user;
 	var pass = data.pass;
+	var email = data.email;
 	
 	if(!checkUserName(socket.id, userName)) return;
 	
@@ -149,7 +150,7 @@ io.sockets.on('connection', function(socket) {
 				bcrypt.genSalt(10, function(err, salt) {
 					bcrypt.hash(pass, salt, function(err, hash) {
 						console.log(hash);
-						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?)", [userName, hash, 1, 0, 0]);
+						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)", [userName, hash, email, 1, 0, 0]);
 						
 						clients[userName] = socket.id;
 						userNameAvailable(socket.id, userName);
