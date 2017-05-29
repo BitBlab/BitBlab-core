@@ -946,7 +946,15 @@ function runCommand(socket, msg, words, srcUser)
 		
 		case 'dumplog':
 			var curTime = new Date().getTime();
-			dumpChatLog(msg.target, curTime - 5*60*1000, curTime);
+			var logName = dumpChatLog(msg.target, curTime - 5*60*1000, curTime);
+			socket.emit('message',
+			{
+				"source": "[System]",
+				"message": "<span class='label label-warning'>Reference \"" + logName +"\" when reporting this incident.</span>",
+				"target": msg.target,
+				"type": msg.type,
+				"tip": 0
+			});
 			break;
 
 		default:
