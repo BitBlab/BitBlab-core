@@ -208,7 +208,7 @@ function setRooms(rooms){
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;
 	}
-	$('#roomWindow').append("<a id='room-Main' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</a><br />"); //setup initial room data
+	$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-Main' class='btn btn-success round-left mono' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</button><button id='close-Main' class='btn btn-success round-right mono'>x</button></span></div><br />"); //setup initial room data
 	roomList["Main"] = true;
 }
 
@@ -226,16 +226,18 @@ function toggleRoom(room, topic){
 	
 	if(typeof roomList[room] == 'undefined'){
 		roomList[room] = true;
-		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono'>x</button></span></div><br />");
 	}
 	
 	if(!roomList[room]){
 		roomList[room] = true;
-		$('#roomWindow').append("<a id='room-" + room + "' class='btn btn-success' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</a><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono'>x</button></span></div><br />");
 	}
 	
 	$('#room-' + room).addClass('btn-success').removeClass('btn-default').removeClass('btn-warning').removeClass('btn-danger');
+	$('#close-' + room).addClass('btn-success').removeClass('btn-default').removeClass('btn-warning').removeClass('btn-danger');
 	$('#room-' + currentRoom).addClass('btn-default').removeClass('btn-success');
+	$('#close-' + currentRoom).addClass('btn-default').removeClass('btn-success');
 	
 	roomData[currentRoom] = $('#msgWindow').html();
 	
@@ -244,9 +246,13 @@ function toggleRoom(room, topic){
 	$('#msgWindow').empty(); //remove all the old text
 	
 	if(currentRoom == room){
-		$('#msgWindow').append("<tr><td class='userSpan'>[System]</td><td class='sysMsg'>Topic: " + topic + "</td></tr><br/>");
+		if(topic != "") {
+			$('#msgWindow').append("<tr><td class='userSpan'>[System]</td><td class='sysMsg'>Topic: " + topic + "</td></tr><br/>");
+		}
 	}else{
-		roomData[room] = roomData[room] + "<tr><td class='userSpan'>System</td><td class='sysMsg'>Topic: " + topic + "</td></tr><br/>";
+		if(topic != "") {
+			roomData[room] = roomData[room] + "<tr><td class='userSpan'>System</td><td class='sysMsg'>Topic: " + topic + "</td></tr><br/>";
+		}
 	}
 	
 	if(roomData[currentRoom] != undefined && roomData[currentRoom] != ""){
@@ -531,5 +537,9 @@ $(function() {
 	e.stopPropagation();
 	e.stopped = true;
 	e.preventDefault();
+  });
+  
+  $('#toggleDark').click(function(e) {
+	  
   });
 });

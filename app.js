@@ -228,6 +228,11 @@ io.sockets.on('connection', function(socket) {
 		socket.emit('cli-error', "Rooms cannot contain spaces!");
 		return;
 	}
+	
+	if(data.name.length > 17) {
+		socket.emit('cli-error', "")
+	}
+	
 	db.serialize(function(){
 		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
 			if(row === undefined){
@@ -805,7 +810,9 @@ function runCommand(socket, msg, words, srcUser)
 						if(row != undefined){
 							var newbal = row.balance + amount;
 							db.run("UPDATE users SET balance = ? WHERE name = ?", [newbal, targetUser]);
-							io.sockets.sockets[clients[targetUser]].emit('balance', newbal); //does not target the right user - fix
+							if(clients[targetUser] !== undefined) {
+								io.sockets.sockets[clients[targetUser]].emit('balance', newbal); //does not target the right user - fix
+							}
 						}
 					});
 				});
