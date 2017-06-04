@@ -3,26 +3,35 @@
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 87vw;
+  /*width: 82vw;*/
   height: 76vh;
+}
+ 
+#msg {
+	width: 77vw; 
+	display:inline-block;
 }
  
 #roomWindow {
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 10vw;
+  width: 192px;
   height: 76vh;
 }
  
 #newRoom {
 	width: 10vw;
 }
+
+#sendmsg {
+	width: 64px;
+}
  
 .shadow {
   box-shadow: 2px 2px 4px 1px #000000;
   padding-top: 10px;
-  padding-right: 1px;
+  padding-right: 15px;
   padding-bottom: 10px;
   padding-left: 15px;
 }
@@ -60,7 +69,15 @@
 	width: 50px;
 }
 
-body {
-   margin: 0;
-   padding: 0;
+.round-left {
+	border-radius: 5px 0 0 5px !important;
+}
+
+.round-right {
+	border-radius: 0 5px 5px 0 !important;
+}
+
+.mono {
+	font-size: 9pt !important;
+    font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
 }
