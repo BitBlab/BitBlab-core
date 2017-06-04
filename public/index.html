@@ -13,7 +13,7 @@
 		<audio id="pingSound"><source src="./sounds/ping.mp3" type="audio/mpeg">
 		<source src="./sounds/ping.ogg" type="audio/ogg"></audio>
 		<audio id="dingdongSound" src=""></audio>
-		<div style="padding: 2px;">
+		<div id="headBox" style="padding: 2px;">
 			<h2 style="display: inline-block; float: left; margin: 0px">BitBlab</h2>
 			<form id="loginform" class="form-inline" style="display: inline-block; float: right">
 				<div class="form-group" style="display: inline-block;">
@@ -30,33 +30,27 @@
 				<span id="balance" class="label label-success"></span>
 			</span>
 		</div>
-		<br>
-		<table>
-			<tr>
-				<td>
+				<div id="chatBox">
 					<div id="msgWindow" style="" class="shadow"></div>
-				</td>
-				
-				<td>
-					<div id="roomWindow" style="" class="shadow"></div>
-				</td>
-			</tr>
-			
-			<tr>
-				<td>
 					<div class="input-group">
 						<input id="msg" type="text" disabled="true" class="form-control" />
 						<span class="input-group-btn">
-							<button id="sendmsg" class="btn btn-info" style="width: 5vw" type="button">Send</button>
+							<button id="sendmsg" class="btn btn-info" type="button">Send</button>
 						</span>
 					</div>
-				</td>
-				
-				<td style="padding: 5px">
-					<input id="newinput" type="text" style="width: 15vw" disabled="true" class="form-control" />
-				</td>
-			</tr>
+				</div>
+				<div id="roomBox">
+					<div id="roomWindow" style="" class="shadow"></div>
+					<input id="newinput" type="text" disabled="true" class="form-control" />
+					<div id="newRoom">
+						<form class="form-inline">
+							<input id="newbutton" type="button" value="Join/Create Room " disabled="true" class="btn btn-success" style="width: 100%" />
+						</form>
+					</div>
+				</div>
+
 			
+		<table>
 			<tr>
 				<td>
 					<select id="color" style="width: 100px; display:inline-block" disabled class="form-control"></select>
@@ -64,11 +58,7 @@
 					<input id="buycolor" type="button" value="Buy Colors" disabled="true" class="btn btn-success" />
 				</td>
 				
-				<td id="newRoom" style="padding: 5px">
-					<form class="form-inline">
-						<input id="newbutton" type="button" value="Join/Create Room " disabled="true" class="btn btn-success" style="width: 15vw" />
-					</form>
-				</td>
+				
 			</tr>
 		</table>
 

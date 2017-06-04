@@ -2,22 +2,71 @@ body {
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-y: hidden;
 }
+
+body::-webkit-scrollbar-track
+{
+	-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+	background-color: #F5F5F5;
+}
+
+body::-webkit-scrollbar
+{
+	width: 10px;
+	background-color: #F5F5F5;
+}
+
+body::-webkit-scrollbar-thumb
+{
+	background-color: #F90;	
+	background-image: -webkit-linear-gradient(45deg,
+	                                          rgba(255, 255, 255, .2) 25%,
+											  transparent 25%,
+											  transparent 50%,
+											  rgba(255, 255, 255, .2) 50%,
+											  rgba(255, 255, 255, .2) 75%,
+											  transparent 75%,
+											  transparent)
+}
+
 
 a {
   color: #00B7FF;
 }
+
+#headBox {
+	height: 60px;
+	/*display: inline-block;*/
+}
+
+#chatBox {
+	width: calc(100% - 197px);
+	display: inline-block;
+	margin-right: 5px;
+	height: 70vh;
+}
+
+#roomBox {
+	position: fixed;
+	right: 0px;
+	top: 60px;
+	width: calc(192px);
+	display: inline-block;
+	height: 70vh;
+}
+
 #msgWindow {
   display: inline-block;
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  /*width: 82vw;*/
-  height: 76vh;
+  width: 100%;
+  height: calc(100% - 34px);
 }
  
 #msg {
-	width: 77vw; 
+	width: 100%; 
 	display:inline-block;
 }
  
@@ -25,12 +74,16 @@ a {
   white-space: pre;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 192px;
-  height: 76vh;
+  width: 100%;
+  height: calc(100% - 68px);
 }
  
 #newRoom {
-	width: 10vw;
+	width: 100%;
+}
+
+#newinput{
+	width: 100%;
 }
 
 #sendmsg {
@@ -38,11 +91,12 @@ a {
 }
  
 .shadow {
-  box-shadow: 2px 2px 4px 1px #000000;
-  padding-top: 10px;
-  padding-right: 15px;
-  padding-bottom: 10px;
-  padding-left: 15px;
+	/*box-shadow: 2px 2px 4px 1px #000000;*/
+	padding-top: 10px;
+	padding-right: 15px;
+	padding-bottom: 10px;
+	padding-left: 15px;
+	border: gray inset;
 }
 
 .allMsg {

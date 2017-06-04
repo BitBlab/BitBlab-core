@@ -1,5 +1,5 @@
 //For managing dynamic UI
-
+/*
 $(window).resize(fitScreen);
 $(document).ready(fitScreen);
 
@@ -11,3 +11,4 @@ function fitScreen() {
 	document.getElementById("msgWindow").style.width = (100 - (217/w)*100).toString() + "vw";
 	document.getElementById("msg").style.width = (100 - (281/w)*100).toString() + "vw";
 }
+*/
