@@ -144,3 +144,11 @@ a {
 	font-size: 9pt !important;
     font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
 }
+
+#openSettings {
+	position:absolute;
+	margin-top: 4;
+	margin-right: 4;
+	top:0;
+	right: 0;
+}

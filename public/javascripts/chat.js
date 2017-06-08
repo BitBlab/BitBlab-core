@@ -366,7 +366,8 @@ $(function() {
 	setBalance(balance);
 	updateExchangeRate()
 	
-	document.getElementById("loginform").remove();
+	document.getElementById("loginformdiv").remove();
+	document.getElementById("settingsmenu").style.display = "unset";
 	
   });
  
@@ -422,15 +423,21 @@ $(function() {
   $('input#register').click(function(e){
 		document.getElementById("registerUsername").value = document.getElementById("userName").value;
 		document.getElementById("registerPassword").value = document.getElementById("password").value;
-	    $('#settings').modal('toggle');
+	    $('#registerModal').modal('toggle');
   });
   
   $('#formRegister').on('submit', function(e) {
 	e.preventDefault();
 	console.log("Registering!");
     setUsername();
-	$('#settings').modal('toggle');
+	$('#registerModal').modal('toggle');
     return false;
+  });
+  
+  $('#openSettings').click(function(e) {
+	e.preventDefault();
+	console.log("Settings");
+	$('#settings').modal('toggle');
   });
   
   $('input#login').click(function(e){
