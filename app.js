@@ -236,7 +236,7 @@ io.sockets.on('connection', function(socket) {
 	db.serialize(function(){
 		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, clients[getKeyByVal(clients, socket.id)], "", data.type, "", ""]);
+				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
 				rooms.push(data);
 				if(data.type == 0)
 					io.sockets.emit('newroom', data);
