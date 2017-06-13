@@ -21,6 +21,8 @@
  * Module dependencies.
  */
 
+var privateKeys = require("./private/keys")
+
 var express = require('express');
 var morgan = require('morgan');
 var bodyParser = require('body-parser');
@@ -36,6 +38,10 @@ var njscrypto = require('node-cryptojs-aes');
 var CryptoJS = njscrypto.CryptoJS;
 
 var bcrypt = require('bcrypt');
+
+var bio = require('block_io');
+var bioVersion = 2; // API version
+var bioWallet = new BlockIo(privateKeys.bioKey, privateKeys.bioPin, bioVersion);
 
 var app = express();
 
