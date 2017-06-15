@@ -41,7 +41,7 @@ var bcrypt = require('bcrypt');
 
 var bio = require('block_io');
 var bioVersion = 2; // API version
-var bioWallet = new BlockIo(privateKeys.bioKey, privateKeys.bioPin, bioVersion);
+var bioWallet = new bio(privateKeys.bioKey, privateKeys.bioPin, bioVersion);
 
 var app = express();
 
@@ -370,6 +370,21 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('list', function(data){
 	socket.emit('list', JSON.stringify(onlineUsers()));
+  });
+
+  socket.on('deposit-init', function(data){
+  	var resp;
+  	var user = getKeyByVal(clients, trimId(socket.id));
+
+  	bioWallet.get_new_address({'label': user}, resp);
+
+  	if(resp.status == "success"){
+  		console.log(resp.address);
+  		io.sockets.sockets[clients[user]].emit('deposit-address', resp.address);
+  	}else{
+  		io.sockets.sockets[clients[user]].emit('cli-error', "Failed to generate deposit address!");
+  	}
+
   });
   
   socket.on('disconnect', function() {
