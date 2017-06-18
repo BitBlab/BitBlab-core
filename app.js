@@ -449,7 +449,9 @@ nsPublic.on('connection', function(socket){
 				    words[i] = "[Warning: links may contain malware]" + words[i];
 				}
 	        }else if(words[i].indexOf("#", 0) == 0){
-				words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+	        	var regex = new RegExp("^#([a-zA-Z0-9]|[-_])*$");
+	        	if(regex.test(words[i]))
+					words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
 			}
 	    }
 		
