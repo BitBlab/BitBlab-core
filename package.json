@@ -13,7 +13,8 @@
     "url": ""
   },
   "scripts": {
-    "start": "supervisor app.js"
+    "start": "supervisor app.js",
+    "test": "supervisor app.js"
   },
   "dependencies": {
     "bcrypt": "^1.0.2",
