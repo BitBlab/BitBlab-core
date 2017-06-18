@@ -373,17 +373,17 @@ io.sockets.on('connection', function(socket) {
   });
 
   socket.on('deposit-init', function(data){
-  	var resp;
   	var user = getKeyByVal(clients, trimId(socket.id));
 
-  	bioWallet.get_new_address({'label': user}, resp);
-
-  	if(resp.status == "success"){
-  		console.log(resp.address);
-  		io.sockets.sockets[clients[user]].emit('deposit-address', resp.address);
-  	}else{
-  		io.sockets.sockets[clients[user]].emit('cli-error', "Failed to generate deposit address!");
-  	}
+  	bioWallet.get_new_address({'label': user + new Date().getTime()}, function (error, data) {
+  		if (error){
+  			console.log("Error occured:", error.message);
+  			io.sockets.sockets[clients[user]].emit('cli-error', "Failed to generate deposit address!");
+  			return;
+  		}
+		console.log(data);
+		io.sockets.sockets[clients[user]].emit('deposit-address', data.address);
+	});
 
   });
   

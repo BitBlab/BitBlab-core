@@ -57,6 +57,7 @@ function enableNewInput(enable){
 	$('select#color').prop('disabled', !enable);
 	$('input#buycolor').prop('disabled', !enable);
 	$('input#buycolorinput').prop('disabled', !enable);
+	$('input#depositbutton').prop('disabled', !enable);
 }
  
 function appendNewMessage(msg) {
@@ -419,6 +420,10 @@ $(function() {
 	pingSound();
 	alert("Mod requested in " + data);
   });
+
+  commandSocket.on('deposit-address', function(data){
+  	//alert(data);
+  });
   
   $('input#register').click(function(e){
 		document.getElementById("registerUsername").value = document.getElementById("userName").value;
@@ -548,5 +553,9 @@ $(function() {
   
   $('#toggleDark').click(function(e) {
 	  
+  });
+
+  $('input#depositbutton').click(function(e){
+	commandSocket.emit("deposit-init");
   });
 });
