@@ -12,3 +12,7 @@ function fitScreen() {
 	document.getElementById("msg").style.width = (100 - (281/w)*100).toString() + "vw";
 }
 */
+
+if ( $.browser.webkit ) {
+    $(".my-group-button").css("height","+=1px");
+}

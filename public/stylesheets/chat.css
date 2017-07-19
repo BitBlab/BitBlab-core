@@ -84,7 +84,6 @@ a {
 }
  
 #msg {
-	width: 100%; 
 	display:inline-block;
 }
  
@@ -106,6 +105,14 @@ a {
 
 #sendmsg {
 	width: 64px;
+}
+
+#chatBox {
+	width: 50%;
+}
+
+.my-group .form-control {
+	width:50% !important;
 }
  
 .shadow {
