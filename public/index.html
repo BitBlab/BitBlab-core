@@ -38,25 +38,33 @@
 			</span>
         </button>
 		</div>
-		
-		<div class="my-group" id="chatBox">
-			<div id="msgWindow" style="" class="shadow"></div>
-			<select id="color" style="width: 100px; display:inline-block" disabled class="form-control"></select>
-			<input id="msg" type="text" disabled class="form-control" />
-			<span class="input-group-btn">
-				<button id="sendmsg" class="btn btn-info my-group-button" type="button">Send</button>
-			</span>
-		</div>
-		
-		<div id="roomBox">
-			<div id="roomWindow" style="" class="shadow"></div>
-			<input id="newinput" type="text" disabled="true" class="form-control" />
-			<div id="newRoom">
-				<form class="form-inline">
-					<input id="newbutton" type="button" value="Join/Create Room " disabled="true" class="btn btn-success" style="width: 100%" />
-				</form>
-			</div>
-		</div>
+				<div id="chatBox">
+					<div id="msgWindow" style="" class="shadow"></div>
+					<div class="input-group">
+						<input id="msg" type="text" disabled="true" class="form-control" />
+						<span class="input-group-btn">
+							<button id="sendmsg" class="btn btn-info" type="button">Send</button>
+						</span>
+					</div>
+				</div>
+				<div id="roomBox">
+					<div id="roomWindow" style="" class="shadow"></div>
+					<input id="newinput" type="text" disabled="true" class="form-control" />
+					<div id="newRoom">
+						<form class="form-inline">
+							<input id="newbutton" type="button" value="Join/Create Room " disabled="true" class="btn btn-success" style="width: 100%" />
+						</form>
+					</div>
+				</div>
+
+			
+		<table>
+			<tr>
+				<td>
+					<select id="color" style="width: 100px; display:inline-block" disabled class="form-control"></select>
+				</td>
+			</tr>
+		</table>
 
 		<!-- Register Modal -->
 		<div id="registerModal" class="modal fade" role="dialog">
