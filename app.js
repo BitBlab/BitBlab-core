@@ -35,7 +35,7 @@ var path = require('path');
 var njscrypto = require('node-cryptojs-aes');
 var CryptoJS = njscrypto.CryptoJS;
 
-var bcrypt = require('bcryptjs');
+var bcrypt = require('bcrypt');
 
 var app = express();
 
