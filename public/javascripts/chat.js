@@ -410,6 +410,7 @@ $(function() {
   });
   
   commandSocket.on('joinroom', function(data){
+	console.log("Joining room " + data.room)
 	toggleRoom(data.room, data.topic);
   });
   

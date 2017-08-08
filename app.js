@@ -48,8 +48,9 @@ var db = new sqlite.Database(file);
 
 db.serialize(function(){
 	if(!dbexists){
-		db.run("CREATE TABLE users (name TEXT, pass TEXT, email TEXT, type INTGER, status INTEGER, balance REAL)");
-		db.run("CREATE TABLE rooms (name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
+		db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, pass TEXT, email TEXT, type INTGER, status INTEGER, balance REAL)");
+		db.run("CREATE TABLE rooms (id INTEGER PRIMARY KEY, name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
+		db.run("CREATE TABLE users_rooms (user INTEGER, room INTEGER)"); //Junction table for the many to many relationship between users and rooms
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
 		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
@@ -108,7 +109,7 @@ var nsCommand = io.of('/'); //used for some functions, probably
 var nsPublic = io.of('/public');
 var nsPrivate = io.of('/private');
 
-setInterval(function(){
+setInterval(function(){ //Run advertisements every 600,000 ms
 	io.sockets.emit('advert', advertisements[adNum]);
 	adNum++;
 	if(adNum > advertisements.length){
@@ -147,10 +148,10 @@ io.sockets.on('connection', function(socket) {
 				
 				userColors[userName] = "black";
 				
-				bcrypt.genSalt(10, function(err, salt) {
-					bcrypt.hash(pass, salt, function(err, hash) {
+				bcrypt.genSalt(10, function(err, salt) { //Generate a salt with a difficulty of 10
+					bcrypt.hash(pass, salt, function(err, hash) { //use that salt to hash
 						console.log(hash);
-						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)", [userName, hash, email, 1, 0, 0]);
+						db.run("INSERT INTO users VALUES (NULL, ?, ?, ?, ?, ?, ?)", [userName, hash, email, 1, 0, 0]); //Only put the hashed salted password in the database
 						
 						clients[userName] = socket.id;
 						userNameAvailable(socket.id, userName);
@@ -209,6 +210,21 @@ io.sockets.on('connection', function(socket) {
 							userColors[user] = "black";
 						}
 					});
+					/* Junction Table Magic */
+					user_id = 0;
+					db.get("SELECT id FROM users WHERE name = ?", user, function(err, row) {
+						console.log("Found the user " + row.id);
+						db.each("SELECT room FROM users_rooms WHERE user = ?", row.id, function(err, room_j) {
+							console.log("Found room in users_rooms " + room_j.room)
+							db.each("SELECT * FROM rooms WHERE id = ?", room_j.room, function(err, room) {
+								socket.emit("joinroom", {"room": room.name, "topic": room.topic})
+							});
+						});
+						user_id = row.id;
+					});
+					console.log(row.id);
+					
+					/*                      */
 				} else {
 					invalidLogin(socket.id);
 				}
@@ -234,13 +250,15 @@ io.sockets.on('connection', function(socket) {
 	}
 	
 	db.serialize(function(){
-		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
+		db.get("SELECT * FROM rooms WHERE name = ?COLLATE NOCASE", data.name, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
+				db.run("INSERT OR IGNORE INTO rooms VALUES (NULL, ?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
+				
+				
 				rooms.push(data);
 				if(data.type == 0)
 					io.sockets.emit('newroom', data);
-				socket.emit('joinroom', {"type":data.type,"room":data.name, "topic": ""});
+				socket.emit('joinroom', {"type": data.type, "room": data.name, "topic": ""});
 				userJoined(getKeyByVal(clients, socket.id), data);
 			}else{
 				if(row.type == 0)
@@ -249,6 +267,16 @@ io.sockets.on('connection', function(socket) {
 					userJoined(getKeyByVal(clients, socket.id), row.name);
 				}
 			}
+			
+			/* Junction table magic */
+			username = getKeyByVal(clients, socket.id);
+			db.get("SELECT * FROM rooms WHERE name = ?", data.name, function(err, r_row) {
+				db.get("SELECT * FROM users WHERE name = ?", username, function(err, u_row) {
+					db.run("INSERT OR IGNORE INTO users_rooms VALUES (?, ?)", [u_row.id, r_row.id]);
+				});
+			});
+			/*                      */
+			
 			nsPublic.connected[getNamespaceId(socket.id, "public")].join(data.name);
 		});
 	});
