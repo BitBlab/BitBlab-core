@@ -208,7 +208,7 @@ function setRooms(rooms){
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;
 	}
-	$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-Main' class='btn btn-success round-left mono' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</button><button id='close-Main' class='btn btn-success round-right mono'>x</button></span></div><br />"); //setup initial room data
+	$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-Main' class='btn btn-success round-left mono' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</button><button id='close-Main' class='btn btn-success round-right mono' onclick='leaveRoom(\"Main\");'>x</button></span><br /></div>"); //setup initial room data
 	roomList["Main"] = true;
 }
 
@@ -226,12 +226,12 @@ function toggleRoom(room, topic){
 	
 	if(typeof roomList[room] == 'undefined'){
 		roomList[room] = true;
-		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");>x</button></span></div><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");'>x</button></span><br /></div>");
 	}
 	
 	if(!roomList[room]){
 		roomList[room] = true;
-		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");'>x</button></span></div><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");'>x</button></span><br /></div>");
 	}
 	
 	$('#room-' + room).addClass('btn-success').removeClass('btn-default').removeClass('btn-warning').removeClass('btn-danger');
@@ -334,7 +334,9 @@ function getExchangeRate(currency, BtoC, input) {
 
 function leaveRoom(room) {
 	node = document.getElementById("close-" + room);
-	node.parentNode.remove(node);
+	node.parentNode.parentNode.remove(node);
+	commandSocket.emit("leaveroom", {"name": room});
+	roomList[room] = false;
 }
 
 $(function() {

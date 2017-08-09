@@ -54,6 +54,8 @@ db.serialize(function(){
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
 		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
+		
+		db.run("CREATE UNIQUE INDEX test ON users(name, pass);"); //Because I don't know how to database
 	}
 });
 
@@ -210,20 +212,20 @@ io.sockets.on('connection', function(socket) {
 							userColors[user] = "black";
 						}
 					});
+					console.log("Before junction table magic");
 					/* Junction Table Magic */
-					user_id = 0;
 					db.get("SELECT id FROM users WHERE name = ?", user, function(err, row) {
 						console.log("Found the user " + row.id);
 						db.each("SELECT room FROM users_rooms WHERE user = ?", row.id, function(err, room_j) {
 							console.log("Found room in users_rooms " + room_j.room)
 							db.each("SELECT * FROM rooms WHERE id = ?", room_j.room, function(err, room) {
 								socket.emit("joinroom", {"room": room.name, "topic": room.topic})
+								nsPublic.connected[getNamespaceId(socket.id, "public")].join(room.name);
+								userJoined(getKeyByVal(clients, socket.id), room.name);
 							});
 						});
-						user_id = row.id;
 					});
-					console.log(row.id);
-					
+					console.log("After junction table magic");
 					/*                      */
 				} else {
 					invalidLogin(socket.id);
@@ -233,13 +235,14 @@ io.sockets.on('connection', function(socket) {
 	});
   });
   
-  socket.on('command', function(data){
+  socket.on('command', function(data) {
 
   	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
 	
   });
   
-  socket.on('addroom', function(data){
+  socket.on('addroom', function(data) {
+	console.log(data.name);
 	if(data.name.indexOf(" ") != -1){
 		socket.emit('cli-error', "Rooms cannot contain spaces!");
 		return;
@@ -249,23 +252,21 @@ io.sockets.on('connection', function(socket) {
 		socket.emit('cli-error', "")
 	}
 	
-	db.serialize(function(){
-		db.get("SELECT * FROM rooms WHERE name = ?COLLATE NOCASE", data.name, function(err, row){
+	db.serialize(function() {
+		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data.name, function(err, row){
 			if(row === undefined){
 				db.run("INSERT OR IGNORE INTO rooms VALUES (NULL, ?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
 				
 				
 				rooms.push(data);
-				if(data.type == 0)
+				if(data.type == 0) {
 					io.sockets.emit('newroom', data);
+				}
 				socket.emit('joinroom', {"type": data.type, "room": data.name, "topic": ""});
 				userJoined(getKeyByVal(clients, socket.id), data);
-			}else{
-				if(row.type == 0)
-				{
-					socket.emit('joinroom', {"room": row.name, "topic": row.topic});
-					userJoined(getKeyByVal(clients, socket.id), row.name);
-				}
+			} else {
+				socket.emit('joinroom', {"room": row.name, "topic": row.topic});
+				userJoined(getKeyByVal(clients, socket.id), row.name);
 			}
 			
 			/* Junction table magic */
@@ -280,6 +281,20 @@ io.sockets.on('connection', function(socket) {
 			nsPublic.connected[getNamespaceId(socket.id, "public")].join(data.name);
 		});
 	});
+  });
+  
+  socket.on('leaveroom', function(data) {
+	  username = getKeyByVal(clients, socket.id);
+	  db.serialize(function() {
+		  db.get("SELECT * FROM rooms WHERE name = ?", data.name, function(err, room_row) {
+			  db.get("SELECT * FROM users WHERE name = ?", username, function(err, user_row) {
+				  db.run("DELETE FROM users_rooms WHERE user = ? AND room = ?", [user_row.id, room_row.id]);
+				  //TODO: Check to see if that was the last one, if so, remove it from the rooms table
+			  });
+		  });
+	  });
+	  nsPublic.connected[getNamespaceId(socket.id, "public")].leave(data.name);
+	  userLeft(username, data.name);
   });
   
   socket.on('buycolor', function(color){
@@ -576,6 +591,12 @@ function userJoined(uName, room) {
 	  console.log(uName);
       io.sockets.sockets[sId].emit('userJoined', { "name": uName, "room": room });
     })
+}
+
+function userLeft(uName, room) {
+	Object.values(clients).forEach(function(sId) {
+		io.sockets.sockets[sId].emit('userLeft', {"name": uname, "room": room});
+	});
 }
  
 function userLeft(uName) {
