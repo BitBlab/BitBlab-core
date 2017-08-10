@@ -17,7 +17,6 @@
 */
 
 body {
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
   overflow-y: hidden;
@@ -169,4 +168,8 @@ a {
 	margin-right: 4;
 	top:0;
 	right: 0;
+}
+
+.modal-content, .form-control, .btn {
+	border-radius: 0px;
 }
