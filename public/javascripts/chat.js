@@ -64,9 +64,9 @@ function appendNewMessage(msg) {
   
   var currentDate = new Date();
   
-  if(msg.message.indexOf(myUserName) != -1 && msg.source != myUserName){
+  if(msg.message.indexOf(myUserName) != -1 && msg.source != myUserName) {
 	  
-	  if(currentRoom != msg.target && roomList[msg.target]){
+	  if(currentRoom != msg.target && roomList[msg.target]) {
 		$('#room-' + msg.target).addClass('btn-warning').removeClass('btn-default');
 		pingSound();
 	  }else if(currentRoom == msg.target){

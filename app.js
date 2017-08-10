@@ -55,7 +55,7 @@ db.serialize(function(){
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
 		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
 		
-		db.run("CREATE UNIQUE INDEX test ON users(name, pass);"); //Because I don't know how to database
+		db.run("CREATE UNIQUE INDEX test ON users_rooms(user, room);"); //Because I don't know how to database
 	}
 });
 
@@ -599,9 +599,9 @@ function userLeft(uName, room) {
 	});
 }
  
-function userLeft(uName) {
+/*function userLeft(uName) {
     io.sockets.emit('userLeft', { "userName": uName });
-}
+}*/
  
 function userNameAvailable(sId, uName) {
 	var colors;
