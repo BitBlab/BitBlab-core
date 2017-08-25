@@ -65,9 +65,9 @@ function appendNewMessage(msg) {
   
   var currentDate = new Date();
   
-  if(msg.message.indexOf(myUserName) != -1 && msg.source != myUserName){
+  if(msg.message.indexOf(myUserName) != -1 && msg.source != myUserName) {
 	  
-	  if(currentRoom != msg.target && roomList[msg.target]){
+	  if(currentRoom != msg.target && roomList[msg.target]) {
 		$('#room-' + msg.target).addClass('btn-warning').removeClass('btn-default');
 		pingSound();
 	  }else if(currentRoom == msg.target){
@@ -209,7 +209,7 @@ function setRooms(rooms){
 	for(var i=0; i < rooms.length; i++){
 		roomList[rooms[i]] = false;
 	}
-	$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-Main' class='btn btn-success round-left mono' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</button><button id='close-Main' class='btn btn-success round-right mono'>x</button></span></div><br />"); //setup initial room data
+	$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-Main' class='btn btn-success round-left mono' onclick='toggleRoom(" + quote + "Main" + quote + ");'>Main</button><button id='close-Main' class='btn btn-success round-right mono' onclick='leaveRoom(\"Main\");'>x</button></span><br /></div>"); //setup initial room data
 	roomList["Main"] = true;
 }
 
@@ -227,12 +227,12 @@ function toggleRoom(room, topic){
 	
 	if(typeof roomList[room] == 'undefined'){
 		roomList[room] = true;
-		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono'>x</button></span></div><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");'>x</button></span><br /></div>");
 	}
 	
 	if(!roomList[room]){
 		roomList[room] = true;
-		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono'>x</button></span></div><br />");
+		$('#roomWindow').append("<div class='input-group'><span class='input-group-btn'><button id='room-" + room + "' class='btn btn-success round-left mono' href='javascript:void(0)' onclick='toggleRoom(" + quote + room + quote + ");'>" + room + "</button><button id='close-" + room + "' class='btn btn-success round-right mono' onclick='leaveRoom(\"" + room + "\");'>x</button></span><br /></div>");
 	}
 	
 	$('#room-' + room).addClass('btn-success').removeClass('btn-default').removeClass('btn-warning').removeClass('btn-danger');
@@ -333,7 +333,12 @@ function getExchangeRate(currency, BtoC, input) {
 	}
 }
 
-
+function leaveRoom(room) {
+	node = document.getElementById("close-" + room);
+	node.parentNode.parentNode.remove(node);
+	commandSocket.emit("leaveroom", {"name": room});
+	roomList[room] = false;
+}
 
 $(function() {
   enableMsgInput(false);
@@ -411,6 +416,7 @@ $(function() {
   });
   
   commandSocket.on('joinroom', function(data){
+	console.log("Joining room " + data.room)
 	toggleRoom(data.room, data.topic);
   });
   

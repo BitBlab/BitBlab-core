@@ -54,11 +54,14 @@ var db = new sqlite.Database(file);
 
 db.serialize(function(){
 	if(!dbexists){
-		db.run("CREATE TABLE users (name TEXT, pass TEXT, email TEXT, type INTGER, status INTEGER, balance REAL)");
-		db.run("CREATE TABLE rooms (name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
+		db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, pass TEXT, email TEXT, type INTGER, status INTEGER, balance REAL)");
+		db.run("CREATE TABLE rooms (id INTEGER PRIMARY KEY, name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
+		db.run("CREATE TABLE users_rooms (user INTEGER, room INTEGER)"); //Junction table for the many to many relationship between users and rooms
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
 		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
 		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
+		
+		db.run("CREATE UNIQUE INDEX test ON users_rooms(user, room);"); //Because I don't know how to database
 	}
 });
 
@@ -114,7 +117,7 @@ var nsCommand = io.of('/'); //used for some functions, probably
 var nsPublic = io.of('/public');
 var nsPrivate = io.of('/private');
 
-setInterval(function(){
+setInterval(function(){ //Run advertisements every 600,000 ms
 	io.sockets.emit('advert', advertisements[adNum]);
 	adNum++;
 	if(adNum > advertisements.length){
@@ -153,10 +156,10 @@ io.sockets.on('connection', function(socket) {
 				
 				userColors[userName] = "black";
 				
-				bcrypt.genSalt(10, function(err, salt) {
-					bcrypt.hash(pass, salt, function(err, hash) {
+				bcrypt.genSalt(10, function(err, salt) { //Generate a salt with a difficulty of 10
+					bcrypt.hash(pass, salt, function(err, hash) { //use that salt to hash
 						console.log(hash);
-						db.run("INSERT INTO users VALUES (?, ?, ?, ?, ?, ?)", [userName, hash, email, 1, 0, 0]);
+						db.run("INSERT INTO users VALUES (NULL, ?, ?, ?, ?, ?, ?)", [userName, hash, email, 1, 0, 0]); //Only put the hashed salted password in the database
 						
 						clients[userName] = socket.id;
 						userNameAvailable(socket.id, userName);
@@ -215,6 +218,21 @@ io.sockets.on('connection', function(socket) {
 							userColors[user] = "black";
 						}
 					});
+					console.log("Before junction table magic");
+					/* Junction Table Magic */
+					db.get("SELECT id FROM users WHERE name = ?", user, function(err, row) {
+						console.log("Found the user " + row.id);
+						db.each("SELECT room FROM users_rooms WHERE user = ?", row.id, function(err, room_j) {
+							console.log("Found room in users_rooms " + room_j.room)
+							db.each("SELECT * FROM rooms WHERE id = ?", room_j.room, function(err, room) {
+								socket.emit("joinroom", {"room": room.name, "topic": room.topic})
+								nsPublic.connected[getNamespaceId(socket.id, "public")].join(room.name);
+								userJoined(getKeyByVal(clients, socket.id), room.name);
+							});
+						});
+					});
+					console.log("After junction table magic");
+					/*                      */
 				} else {
 					invalidLogin(socket.id);
 				}
@@ -223,13 +241,14 @@ io.sockets.on('connection', function(socket) {
 	});
   });
   
-  socket.on('command', function(data){
+  socket.on('command', function(data) {
 
   	socket.emit('cli-error', "This method has been removed. Please send messages that begin with '/' instead. ")
 	
   });
   
-  socket.on('addroom', function(data){
+  socket.on('addroom', function(data) {
+	console.log(data.name);
 	if(data.name.indexOf(" ") != -1){
 		socket.emit('cli-error', "Rooms cannot contain spaces!");
 		return;
@@ -239,25 +258,49 @@ io.sockets.on('connection', function(socket) {
 		socket.emit('cli-error', "")
 	}
 	
-	db.serialize(function(){
-		db.get("SELECT * FROM rooms WHERE name = ? AND type = ?COLLATE NOCASE", data.name, data.type, function(err, row){
+	db.serialize(function() {
+		db.get("SELECT * FROM rooms WHERE name = ? COLLATE NOCASE", data.name, function(err, row){
 			if(row === undefined){
-				db.run("INSERT INTO rooms VALUES (?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
+				db.run("INSERT OR IGNORE INTO rooms VALUES (NULL, ?, ?, ?, ?, ?, ?)", [data.name, getKeyByVal(clients, socket.id), "", data.type, "", ""]);
+				
+				
 				rooms.push(data);
-				if(data.type == 0)
+				if(data.type == 0) {
 					io.sockets.emit('newroom', data);
-				socket.emit('joinroom', {"type":data.type,"room":data.name, "topic": ""});
-				userJoined(getKeyByVal(clients, socket.id), data);
-			}else{
-				if(row.type == 0)
-				{
-					socket.emit('joinroom', {"room": row.name, "topic": row.topic});
-					userJoined(getKeyByVal(clients, socket.id), row.name);
 				}
+				socket.emit('joinroom', {"type": data.type, "room": data.name, "topic": ""});
+				userJoined(getKeyByVal(clients, socket.id), data);
+			} else {
+				socket.emit('joinroom', {"room": row.name, "topic": row.topic});
+				userJoined(getKeyByVal(clients, socket.id), row.name);
 			}
+			
+			/* Junction table magic */
+			username = getKeyByVal(clients, socket.id);
+			db.get("SELECT * FROM rooms WHERE name = ?", data.name, function(err, r_row) {
+				db.get("SELECT * FROM users WHERE name = ?", username, function(err, u_row) {
+					db.run("INSERT OR IGNORE INTO users_rooms VALUES (?, ?)", [u_row.id, r_row.id]);
+				});
+			});
+			/*                      */
+			
 			nsPublic.connected[getNamespaceId(socket.id, "public")].join(data.name);
 		});
 	});
+  });
+  
+  socket.on('leaveroom', function(data) {
+	  username = getKeyByVal(clients, socket.id);
+	  db.serialize(function() {
+		  db.get("SELECT * FROM rooms WHERE name = ?", data.name, function(err, room_row) {
+			  db.get("SELECT * FROM users WHERE name = ?", username, function(err, user_row) {
+				  db.run("DELETE FROM users_rooms WHERE user = ? AND room = ?", [user_row.id, room_row.id]);
+				  //TODO: Check to see if that was the last one, if so, remove it from the rooms table
+			  });
+		  });
+	  });
+	  nsPublic.connected[getNamespaceId(socket.id, "public")].leave(data.name);
+	  userLeft(username, data.name);
   });
   
   socket.on('buycolor', function(color){
@@ -470,7 +513,9 @@ nsPublic.on('connection', function(socket){
 				    words[i] = "[Warning: links may contain malware]" + words[i];
 				}
 	        }else if(words[i].indexOf("#", 0) == 0){
-				words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+	        	var regex = new RegExp("^#([a-zA-Z0-9]|[-_])*$");
+	        	if(regex.test(words[i]))
+					words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
 			}
 	    }
 		
@@ -568,10 +613,16 @@ function userJoined(uName, room) {
       io.sockets.sockets[sId].emit('userJoined', { "name": uName, "room": room });
     })
 }
- 
-function userLeft(uName) {
-    io.sockets.emit('userLeft', { "userName": uName });
+
+function userLeft(uName, room) {
+	Object.values(clients).forEach(function(sId) {
+		io.sockets.sockets[sId].emit('userLeft', {"name": uname, "room": room});
+	});
 }
+ 
+/*function userLeft(uName) {
+    io.sockets.emit('userLeft', { "userName": uName });
+}*/
  
 function userNameAvailable(sId, uName) {
 	var colors;
