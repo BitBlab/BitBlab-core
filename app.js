@@ -402,20 +402,8 @@ nsPublic.on('connection', function(socket){
 		db.serialize(function() {
 			db.run("INSERT INTO messages VALUES (?, ?, ?, ?)", [srcUser, msg.target, msg.message, curTime])
 		});
-		
-		if(curTime - userMsgTime[srcUser] < 500){ //check if the user is sending too many messages
-			socket.emit('message',
-					{"source": "[System]",
-					"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
-					"target": msg.target,
-					"type": msg.type,
-					"tip": 0
-					});
-			userMsgTime[srcUser] = curTime;
-			return;
-		} else{
-			userMsgTime[srcUser] = curTime;
-		}
+
+		checkMessageRateLimit(srcUser, socket, msg);
 		
 		var words = msg.message.split(" ");
 
@@ -439,19 +427,7 @@ nsPublic.on('connection', function(socket){
 		
 		msg.message = addEmotes(msg.message);
 		
-		for(var i = 0; i < words.length; i++) {
-	        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
-			    if(userType[srcUser] >= 1){
-			        console.log("Link detected");
-	                var url = words[i];
-	                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
-				}else{
-				    words[i] = "[Warning: links may contain malware]" + words[i];
-				}
-	        }else if(words[i].indexOf("#", 0) == 0){
-				words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
-			}
-	    }
+		words = addLinks(words)
 		
 		msg.message = words.join(" ");
 		
@@ -485,6 +461,38 @@ nsPublic.on('connection', function(socket){
 			   });
   });
 }); //end nsPublic
+
+nsPrivate.on('connection', function(socket){
+
+
+	socket.on('message', function(msg){
+
+		if(msg.message === undefined)
+			return;
+
+		var srcUser = getKeyByVal(clients, trimId(socket.id));
+	    
+	    if(srcUser === undefined) {
+		    //improve error logging later (like that'll happen)
+		    return;
+	    }
+
+	    if(!userInPrivChat(msg.target, srcUser))
+	    	return;
+
+	    checkMessageRateLimit(srcUser, socket, msg);
+
+		nsPublic.to(msg.target)
+				.emit('message',
+					{
+						"source": srcUser,
+						"message": msg.message,
+						"target": msg.target,
+						"type": msg.type,
+						"tip": winnings
+					});
+	});
+}); // end nsPrivate
  
 function tipUser(user, target, amount, socket, room, message){
 
@@ -1113,4 +1121,54 @@ function dumpChatLog(room, startTime, endTime)
 	});
 
 	return fileName;
+}
+
+function checkMessageRateLimit(user, socket, msg){
+
+	var curTime = new Date().getTime();
+
+	if(curTime - userMsgTime[user] < 500){ //check if the user is sending too many messages
+		socket.emit('message',
+				{"source": "[System]",
+				"message": "<span class='label label-danger'>You are sending too many messages too fast! Please no more than 2 per second!</span>",
+				"target": msg.target,
+				"type": msg.type,
+				"tip": 0
+				});
+		userMsgTime[user] = curTime;
+		return;
+	} else{
+		userMsgTime[user] = curTime;
+	}
+}
+
+functions addLinks(words){
+	for(var i = 0; i < words.length; i++) {
+        if(words[i].indexOf("http://", 0) == 0 || words[i].indexOf("https://", 0) == 0){
+		    if(userType[srcUser] >= 1){
+		        console.log("Link detected");
+                var url = words[i];
+                words[i] = "<a href=\"" + url + "\" target = _blank>" + url + "</a>";
+			}else{
+			    words[i] = "[Warning: links may contain malware]" + words[i];
+			}
+        }else if(words[i].indexOf("#", 0) == 0){
+			words[i] = "<a href='javascript:void(0)' onclick='addRoom(\"" + words[i].substring(1) + "\");'>" + words[i] + "</a>";
+		}
+    }
+    return words;
+}
+
+function privChatName(user1, user2){
+	return user1 + ":" + user2;
+}
+
+function checkPrivChatName(name, user1, user2){
+	u = name.split(':');
+	return (u[0] == user1 || u[1] == user1) && (u[0] == user2 || u[1] == user2);
+}
+
+function userInPrivChat(name, user){
+	u = name.split(':');
+	return u[0] == user || u[1] == user;
 }
