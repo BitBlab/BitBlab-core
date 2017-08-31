@@ -31,6 +31,7 @@ var serveStatic = require('serve-static');
 var errorHandler = require('errorhandler');
 
 var socketio = require('socket.io');
+var WebSocket = require('ws');
 var http = require('http');
 var path = require('path');
 
@@ -40,8 +41,9 @@ var CryptoJS = njscrypto.CryptoJS;
 var bcrypt = require('bcrypt');
 
 var bio = require('block_io');
-var bioVersion = 2; // API version
-var bioWallet = new bio(privateKeys.bioKey, privateKeys.bioPin, bioVersion);
+var bioVersion = '2'; // API version
+var bioWallet = new bio({api_key:privateKeys.bioKey, version:bioVersion});
+var addresses = []; //All active (green) addresses we're using through block.io
 
 var app = express();
 
@@ -58,7 +60,7 @@ db.serialize(function(){
 		db.run("CREATE TABLE rooms (id INTEGER PRIMARY KEY, name TEXT, owner TEXT, mods TEXT, private BOOL, messages TEXT, topic TEXT)");
 		db.run("CREATE TABLE users_rooms (user INTEGER, room INTEGER)"); //Junction table for the many to many relationship between users and rooms
 		db.run("CREATE TABLE colors (name TEXT, colors TEXT, nameColors TEXT)");
-		db.run("CREATE TABLE transactions (hash TEXT, value INTEGER, input_address TEXT)");
+		db.run("CREATE TABLE transactions (hash TEXT, value REAL, input_address TEXT)");
 		db.run("CREATE TABLE messages (name TEXT, room TEXT, message TEXT, timestamp TEXT)");
 		
 		db.run("CREATE UNIQUE INDEX test ON users_rooms(user, room);"); //Because I don't know how to database
@@ -91,7 +93,7 @@ var emoteFiles = ["smiling.png", "frowning.png", "angry.png", "cool.png", "tongu
 app.set('port', process.env.PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
-app.use(morgan('dev'));
+//app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(methodOverride());
@@ -107,7 +109,7 @@ var server = app.listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
 
-
+var blockws = new WebSocket("wss://n.block.io/"); //For listening to block.io transaction messages
 var io = socketio.listen(server);
 var clients = {};
 //var onlineUsers = [];
@@ -127,6 +129,40 @@ setInterval(function(){ //Run advertisements every 600,000 ms
 	fixOnlineList();
 	
 }, 600000);
+
+blockws.on('open', function open() {
+	console.log("Block.io WebSocket connection opened.");
+	blockws.send(JSON.stringify({'type':'new-transactions','network':'BTCTEST'})); //CHANGE FOR LIVE BUILD
+	console.log(bioWallet);
+	bioWallet.get_balance(console.log);
+	bioWallet.get_my_addresses({}, function(err, data) {
+		for(i = 0; i<data.data.addresses.length; i++) {
+			addresses.push(data.data.addresses[i].address);
+		}
+	});
+});
+
+blockws.on('message', function (msg) {
+	msg = JSON.parse(msg);
+    if (msg.type == 'new-transactions') {
+		transaction_addresses = []
+		for(i=0; i<msg.data.outputs.length; i++) {
+			transaction_addresses.push(msg.data.outputs[i].address);
+		}
+
+		for(i=0; i<transaction_addresses.length; i++) {
+			for(j=0; j<addresses.length; j++) {
+				if(transaction_addresses[i] === addresses[j]) {
+					console.log("Transaction received! Value: " + JSON.stringify(msg.data.outputs[i].amount));
+				}
+			}
+		}
+	}
+    
+    if (msg.status == 'success')  {
+		console.log("Block.io connection confirmed");
+	}
+});
 
 io.sockets.on('connection', function(socket) {
   console.log("CONNECTION");
@@ -291,6 +327,7 @@ io.sockets.on('connection', function(socket) {
   
   socket.on('leaveroom', function(data) {
 	  username = getKeyByVal(clients, socket.id);
+	  console.log(username);
 	  db.serialize(function() {
 		  db.get("SELECT * FROM rooms WHERE name = ?", data.name, function(err, room_row) {
 			  db.get("SELECT * FROM users WHERE name = ?", username, function(err, user_row) {
@@ -616,7 +653,7 @@ function userJoined(uName, room) {
 
 function userLeft(uName, room) {
 	Object.values(clients).forEach(function(sId) {
-		io.sockets.sockets[sId].emit('userLeft', {"name": uname, "room": room});
+		io.sockets.sockets[sId].emit('userLeft', {"name": uName, "room": room});
 	});
 }
  
