@@ -14,9 +14,10 @@
   },
   "scripts": {
     "start": "supervisor app.js",
-    "test": "sh test/start_tests.sh"
+    "test": "mocha test"
   },
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "bcryptjs": "^1.0.2",
     "body-parser": "^1.17.1",
     "errorhandler": "^1.5.0",
